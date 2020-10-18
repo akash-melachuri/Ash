@@ -1,3 +1,4 @@
 /Debug
 .clangd/
-
+compile_commands.json
+build_commands.sh
