@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/home/akash/Development/C++/Ash/Debug",
-  "command": "/usr/bin/c++  -I/home/akash/Development/C++/Ash/include -I/home/akash/Development/C++/Ash/vendor/GLFW/include -g -std=gnu++2a -o CMakeFiles/main.dir/src/main.cpp.o -c /home/akash/Development/C++/Ash/src/main.cpp",
-  "file": "/home/akash/Development/C++/Ash/src/main.cpp"
-}
-]
