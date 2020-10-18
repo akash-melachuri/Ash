@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(main VERSION 1.0.0)
 
+find_package(Vulkan REQUIRED FATAL_ERROR)
+
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -18,3 +20,4 @@ file(GLOB_RECURSE SOURCES src/*.cpp main.cpp)
 add_executable(main ${SOURCES})
 
 target_link_libraries(main glfw)
+target_link_libraries(main Vulkan::Vulkan)
