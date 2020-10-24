@@ -2,4 +2,3 @@
 
 Build Dependencies:
 - Vulkan SDK
-- GLM
