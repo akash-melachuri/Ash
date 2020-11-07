@@ -1,14 +1,12 @@
-#define GLFW_INCLUDE_VULKAN
-#include "GLFW/glfw3.h"
-#include "vulkan/vulkan.h"
-#include "glm/glm.hpp"
-
 #include <iostream>
+
+#include "GLFW/glfw3.h"
+#include "glm/glm.hpp"
+#include "vulkan/vulkan.h"
 
 void error_callback(int error, const char* description) {
     std::cerr << "Error: " << description << std::endl;
 }
-
 
 int main() {
     if (!glfwInit()) {
@@ -18,7 +16,7 @@ int main() {
 
     glfwSetErrorCallback(error_callback);
 
-    GLFWwindow* window = glfwCreateWindow(640, 480, "My Title", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(640, 480, "Lion", NULL, NULL);
     if (!window) {
         std::cerr << "Window creation failed" << std::endl;
         return -1;
