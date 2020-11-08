@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-class Lion {
+class Ash {
     private: 
         VkInstance instance;
 }

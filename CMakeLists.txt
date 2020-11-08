@@ -17,8 +17,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
-include_directories(include)
-file(GLOB_RECURSE SOURCES src/*.cpp main.cpp)
+include_directories(Engine/src)
+file(GLOB_RECURSE SOURCES Engine/src/*.cpp Engine/*.cpp)
 
 add_executable(main ${SOURCES})
 
