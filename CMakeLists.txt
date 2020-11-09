@@ -18,7 +18,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 include_directories(Engine/src)
-file(GLOB_RECURSE SOURCES Engine/src/*.cpp Engine/*.cpp)
+file(GLOB_RECURSE SOURCES Engine/src/*.cpp Engine/src/*.h Engine/*.cpp Engine/*.h)
 
 add_executable(main ${SOURCES})
 
