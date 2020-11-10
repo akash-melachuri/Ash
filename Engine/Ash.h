@@ -1,8 +1,4 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
-
-class Ash {
-    private: 
-        VkInstance instance;
-}
+#include "Log.h"
+#include "Window.h"

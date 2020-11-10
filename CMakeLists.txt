@@ -17,11 +17,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
-include_directories(Engine/src)
-file(GLOB_RECURSE SOURCES Engine/src/*.cpp Engine/src/*.h Engine/*.cpp Engine/*.h)
-
-add_executable(main ${SOURCES})
+include_directories(Engine Engine/src)
+file(GLOB_RECURSE SOURCES Engine/*.cpp Engine/*.h)
+add_library(main ${SOURCES})
 
 target_link_libraries(main glfw)
 target_link_libraries(main Vulkan::Vulkan)
 target_link_libraries(main glm::glm)
+
+file(GLOB_RECURSE GAME_SOURCES Game/*.cpp Game/*.h)
+add_executable(game ${GAME_SOURCES})
+target_link_libraries(game main)
