@@ -3,6 +3,7 @@
 namespace Ash {
 
     void Log::init() {
-        ASH_DEBUG("Logger initialized");
+        ASH_DEBUG("Logger initialized"); 
     }
+
 }

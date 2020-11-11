@@ -1,14 +1,16 @@
-#pragma once 
+#pragma once
 
-#include <iostream> 
+#include <iostream>
 namespace Ash {
-    class Log {
-        public: 
-            Log();
-            ~Log();
 
-            static void init();
+    class Log {
+       public:
+        Log();
+        ~Log();
+    
+        static void init();
     };
+
 }
 
 #define ASH_DEBUG(...) std::cout << "[Ash]: " << __VA_ARGS__ << std::endl;
