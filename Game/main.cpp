@@ -1,5 +1,7 @@
 #include <Ash.h>
 
+#include <iostream>
+
 int main() {
-    APP_DEBUG("Testing logger!");
+
 }

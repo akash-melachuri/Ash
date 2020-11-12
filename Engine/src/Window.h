@@ -1,9 +1,10 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
-#include <bits/stdint-uintn.h>
+#include "ashpch.h"
 
-#include <iostream>
+#include "Log.h"
+
+#include <GLFW/glfw3.h>
 
 namespace Ash {
 
@@ -12,7 +13,7 @@ namespace Ash {
         Window(uint32_t width, uint32_t height) : width(width), height(height) {
             if (!initialized) {
                 if (!glfwInit()) {
-                    std::cerr << "GLFW failed to initialize" << std::endl;
+                    ASH_ERROR("GLFW failed to initialize");
                 }
             }
         } 

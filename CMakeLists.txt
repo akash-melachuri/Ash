@@ -12,6 +12,7 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(vendor/GLFW)
+add_subdirectory(vendor/spdlog)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
@@ -24,6 +25,7 @@ add_library(main ${SOURCES})
 target_link_libraries(main glfw)
 target_link_libraries(main Vulkan::Vulkan)
 target_link_libraries(main glm::glm)
+target_link_libraries(main spdlog)
 
 file(GLOB_RECURSE GAME_SOURCES Game/*.cpp Game/*.h)
 add_executable(game ${GAME_SOURCES})
