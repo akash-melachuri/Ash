@@ -1,7 +1,5 @@
 #pragma once
 
-#include "ashpch.h"
-
 #include "Log.h"
 
 #include <GLFW/glfw3.h>

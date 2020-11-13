@@ -20,7 +20,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 include_directories(Engine Engine/src)
 file(GLOB_RECURSE SOURCES Engine/*.cpp Engine/*.h)
+
 add_library(main ${SOURCES})
+
+target_precompile_headers(main PRIVATE Engine/ashpch.h)
 
 target_link_libraries(main glfw)
 target_link_libraries(main Vulkan::Vulkan)

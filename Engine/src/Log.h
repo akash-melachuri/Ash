@@ -1,8 +1,7 @@
 #pragma once
 
-#include "ashpch.h"
-
 #include <spdlog/spdlog.h>
+#include <vector>
 
 namespace Ash {
 
