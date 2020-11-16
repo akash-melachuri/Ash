@@ -5,6 +5,7 @@ namespace Ash {
 
     App::App() {
         instance = this;
+        window = Window::create(800, 600, "Ash");
     }
 
     App::~App() {
@@ -13,6 +14,7 @@ namespace Ash {
     void App::start() {
         // Startup systems
         Log::init();
+        Window::init();
 
         auto app = new App();
         app->run();
@@ -20,11 +22,17 @@ namespace Ash {
 
     void App::shutdown() {
         // Shtudown systems
+        instance->window->destroy();
+        Window::terminate();
 
         delete instance;
     }
 
     void App::run() {
         APP_INFO("Running!");
+        while (!window->shouldClose()) {
+            window->swapBuffers();
+            window->pollEvents();
+        }
     }
 }  // namespace Ash

@@ -4,21 +4,26 @@
 
 namespace Ash {
 
-    class Log {
-       public:
-        Log();
-        ~Log();
+class Log {
+   public:
+    Log();
+    ~Log();
 
-        static void init();
-    
-        inline static std::shared_ptr<spdlog::logger>& getConsoleLogger() { return coreConsole; }
-        inline static std::shared_ptr<spdlog::logger>& getAppLogger() { return appLogger; }
-       private:
-        static std::shared_ptr<spdlog::logger> coreConsole;
-        static std::shared_ptr<spdlog::logger> appLogger;
-    };
+    static void init();
 
-}
+    inline static std::shared_ptr<spdlog::logger>& getConsoleLogger() {
+        return coreConsole;
+    }
+    inline static std::shared_ptr<spdlog::logger>& getAppLogger() {
+        return appLogger;
+    }
+
+   private:
+    static std::shared_ptr<spdlog::logger> coreConsole;
+    static std::shared_ptr<spdlog::logger> appLogger;
+};
+
+}  // namespace Ash
 
 #define ASH_INFO(...) Ash::Log::getConsoleLogger()->info(__VA_ARGS__);
 #define ASH_WARN(...) Ash::Log::getConsoleLogger()->warn(__VA_ARGS__);

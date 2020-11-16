@@ -2,6 +2,6 @@
 
 #include <memory>
 #include <bits/stdint-uintn.h>
-#include <vector>
+#include <string>
 
 #include "Log.h"
