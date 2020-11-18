@@ -9,6 +9,9 @@ VulkanAPI::VulkanAPI() {}
 VulkanAPI::~VulkanAPI() {}
 
 void VulkanAPI::init() {
+    if (enableValidationLayers && !checkValidationSupport())
+        ASH_ERROR("Enabled validation layers, but not supported");
+
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "Game";
@@ -28,7 +31,13 @@ void VulkanAPI::init() {
     createInfo.enabledExtensionCount = glfwExtensionCount;
     createInfo.ppEnabledExtensionNames = glfwExtensions;
 
-    createInfo.enabledLayerCount = 0;
+    if (enableValidationLayers) {
+        createInfo.enabledLayerCount =
+            static_cast<uint32_t>(validationLayers.size());
+        createInfo.ppEnabledLayerNames = validationLayers.data();
+    } else {
+        createInfo.enabledLayerCount = 0;
+    }
 
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
         ASH_ERROR("Failed to initialize vulkan");
@@ -51,6 +60,31 @@ void VulkanAPI::init() {
 void VulkanAPI::cleanup() {
     ASH_INFO("Destroying Vulkan instance...");
     vkDestroyInstance(instance, nullptr);
+}
+
+bool VulkanAPI::checkValidationSupport() {
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (const char* layerName : validationLayers) {
+        bool layerFound = false;
+
+        for (const auto& layerProperties : availableLayers) {
+            if (strcmp(layerName, layerProperties.layerName) == 0) {
+                layerFound = true;
+                break;
+            }
+        }
+
+        if (!layerFound) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 }  // namespace Ash

@@ -13,7 +13,18 @@ class VulkanAPI {
     void cleanup();
 
    private:
+    bool checkValidationSupport();
+
     VkInstance instance;
+
+    const std::vector<const char*> validationLayers = {
+        "VK_LAYER_KHRONOS_validation"};
+
+#ifdef NDEBUG
+    const bool enableValidationLayers = false;
+#else
+    const bool enableValidationLayers = true;
+#endif
 };
 
 }  // namespace Ash
