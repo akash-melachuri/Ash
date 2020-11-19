@@ -6,12 +6,15 @@ App* App::instance = nullptr;
 
 App::App() {
     instance = this;
+
+    // Initialize window
     window = Window::create({
         "Ash",
         800,
         600,
     });
 
+    // Initialize graphics API
     api = std::make_unique<VulkanAPI>();
     api->init();
 }
@@ -28,8 +31,9 @@ void App::start() {
 }
 
 void App::cleanup() {
-    // Shtudown systems
     ASH_INFO("Cleaning up resources...");
+
+    // Shtudown systems
     instance->api->cleanup();
     instance->window->destroy();
     Window::cleanup();
