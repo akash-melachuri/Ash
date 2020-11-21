@@ -55,6 +55,38 @@ void populateDebugMessengerCreateInfo(
     createInfo.pfnUserCallback = debugCallBack;
 }
 
+bool isDeviceSuitable(VkPhysicalDevice device) {
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+    return true;
+}
+
+void VulkanAPI::pickPhysicalDevice() {
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+    if (deviceCount == 0) {
+        ASH_ERROR("No devices with Vulkan support found");
+        throw std::runtime_error("");
+    }
+
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+    for (const auto& device : devices) {
+        if (isDeviceSuitable(device)) {
+            physicalDevice = device;
+            break;
+        }
+    }
+
+    if (physicalDevice == VK_NULL_HANDLE) {
+        ASH_ERROR("No suitable device found");
+        throw std::runtime_error("");
+    }
+}
+
 void VulkanAPI::createInstance() {
     if (enableValidationLayers && !checkValidationSupport())
         ASH_ERROR("Enabled validation layers, but not supported");
