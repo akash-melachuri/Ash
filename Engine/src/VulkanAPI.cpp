@@ -55,12 +55,24 @@ void populateDebugMessengerCreateInfo(
     createInfo.pfnUserCallback = debugCallBack;
 }
 
-bool isDeviceSuitable(VkPhysicalDevice device) {
+int rateDeviceSuitability(VkPhysicalDevice device) {
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(device, &deviceProperties);
 
-    return true;
+    VkPhysicalDeviceFeatures deviceFeatures;
+
+    int score = 0;
+
+    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+        score += 1000;
+    }
+
+    score += deviceProperties.limits.maxImageDimension2D;
+
+    return score;
 }
+
+bool isDeviceSuitable(VkPhysicalDevice device) { return true; }
 
 void VulkanAPI::pickPhysicalDevice() {
     uint32_t deviceCount = 0;
@@ -74,14 +86,16 @@ void VulkanAPI::pickPhysicalDevice() {
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
+    std::multimap<int, VkPhysicalDevice> candidates;
+
     for (const auto& device : devices) {
-        if (isDeviceSuitable(device)) {
-            physicalDevice = device;
-            break;
-        }
+        int score = rateDeviceSuitability(device);
+        candidates.insert(std::make_pair(score, device));
     }
 
-    if (physicalDevice == VK_NULL_HANDLE) {
+    if (candidates.rbegin()->first > 0) {
+        physicalDevice = candidates.rbegin()->second;
+    } else {
         ASH_ERROR("No suitable device found");
         throw std::runtime_error("");
     }
