@@ -6,6 +6,11 @@ namespace Ash {
 
 class VulkanAPI {
    public:
+    struct QueueFamilyIndices {
+        std::optional<uint32_t> graphicsFamily;
+    };
+
+   public:
     VulkanAPI();
     ~VulkanAPI();
 

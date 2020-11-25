@@ -42,6 +42,31 @@ VulkanAPI::VulkanAPI() {}
 
 VulkanAPI::~VulkanAPI() {}
 
+VulkanAPI::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+    VulkanAPI::QueueFamilyIndices indices;
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
+                                             nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
+                                             queueFamilies.data());
+
+    uint32_t i = 0;
+    for (const auto& queueFamily : queueFamilies) {
+        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            indices.graphicsFamily = i;
+        }
+
+        if (indices.graphicsFamily.has_value()) break;
+
+        i++;
+    }
+
+    return indices;
+}
+
 void populateDebugMessengerCreateInfo(
     VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
     createInfo = {};
@@ -72,7 +97,11 @@ int rateDeviceSuitability(VkPhysicalDevice device) {
     return score;
 }
 
-bool isDeviceSuitable(VkPhysicalDevice device) { return true; }
+bool isDeviceSuitable(VkPhysicalDevice device) {
+    VulkanAPI::QueueFamilyIndices indices = findQueueFamilies(device);
+
+    return indices.graphicsFamily.has_value();
+}
 
 void VulkanAPI::pickPhysicalDevice() {
     uint32_t deviceCount = 0;
