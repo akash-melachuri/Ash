@@ -22,15 +22,20 @@ class VulkanAPI {
     void createInstance();
     void setupDebugMessenger();
     void pickPhysicalDevice();
+    void createLogicalDevice();
 
     VkInstance instance;
+
     VkDebugUtilsMessengerEXT debugMessenger;
+
     VkPhysicalDevice physicalDevice;
+    VkDevice device;
+    VkQueue graphicsQueue;
 
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"};
 
-#ifdef NDEBUG
+#ifndef ASH_DEBUG
     const bool enableValidationLayers = false;
 #else
     const bool enableValidationLayers = true;
