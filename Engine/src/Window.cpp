@@ -21,8 +21,11 @@ void Window::swapBuffers() const { glfwSwapBuffers(window); }
 
 void Window::pollEvents() const { glfwPollEvents(); }
 
+GLFWwindow* Window::getInstance() const { return window; }
+
 std::unique_ptr<Window> Window::create(const WindowProperties& properties) {
     std::unique_ptr<Window> ret = std::make_unique<Window>();
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     ret->window = glfwCreateWindow(properties.width, properties.height,
                                    properties.title.c_str(), nullptr, nullptr);
     ASH_ASSERT(ret, "Failed to create window");

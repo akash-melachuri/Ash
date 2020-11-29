@@ -23,6 +23,7 @@ class Window {
     bool shouldClose() const;
     void swapBuffers() const;
     void pollEvents() const;
+    GLFWwindow* getInstance() const;
 
     static std::unique_ptr<Window> create(const WindowProperties& properties);
     void destroy();

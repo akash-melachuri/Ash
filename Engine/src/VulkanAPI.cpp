@@ -245,9 +245,18 @@ void VulkanAPI::createLogicalDevice() {
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
 }
 
-void VulkanAPI::init() {
+void VulkanAPI::createSurface(GLFWwindow* window) {
+    VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface); 
+    if (result != VK_SUCCESS) {
+        ASH_ERROR("Failed to create window surface, {}", result);
+        throw std::runtime_error("");
+    }
+}
+
+void VulkanAPI::init(GLFWwindow* window) {
     createInstance();
     setupDebugMessenger();
+    createSurface(window);
     pickPhysicalDevice();
     createLogicalDevice();
 }
@@ -257,9 +266,11 @@ void VulkanAPI::cleanup() {
 
     vkDestroyDevice(device, nullptr);
 
+
     if (enableValidationLayers)
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
 
+    vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
 }
 

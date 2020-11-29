@@ -2,6 +2,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include <GLFW/glfw3.h>
+
 namespace Ash {
 
 class VulkanAPI {
@@ -14,13 +16,14 @@ class VulkanAPI {
     VulkanAPI();
     ~VulkanAPI();
 
-    void init();
+    void init(GLFWwindow* window);
     void cleanup();
 
    private:
     bool checkValidationSupport();
     void createInstance();
     void setupDebugMessenger();
+    void createSurface(GLFWwindow* window);
     void pickPhysicalDevice();
     void createLogicalDevice();
 
@@ -31,6 +34,8 @@ class VulkanAPI {
     VkPhysicalDevice physicalDevice;
     VkDevice device;
     VkQueue graphicsQueue;
+
+    VkSurfaceKHR surface;
 
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"};
