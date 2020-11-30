@@ -23,7 +23,7 @@
             APP_ERROR("Assertion: {0}", __VA_ARGS__); \
         }                                             \
     }
-#elif
+#else
 #define ASH_ASSERT(x, ...)
 #define APP_ASSERT(x, ...)
 #endif
