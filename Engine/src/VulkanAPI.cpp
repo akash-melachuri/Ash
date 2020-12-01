@@ -1,6 +1,6 @@
 #include "VulkanAPI.h"
 
-#include <GLFW/glfw3.h>
+#include <set>
 
 namespace Ash {
 
@@ -42,7 +42,7 @@ VulkanAPI::VulkanAPI() {}
 
 VulkanAPI::~VulkanAPI() {}
 
-VulkanAPI::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+VulkanAPI::QueueFamilyIndices VulkanAPI::findQueueFamilies(VkPhysicalDevice device) {
     VulkanAPI::QueueFamilyIndices indices;
 
     uint32_t queueFamilyCount = 0;
@@ -59,7 +59,15 @@ VulkanAPI::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
             indices.graphicsFamily = i;
         }
 
-        if (indices.graphicsFamily.has_value()) break;
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface,
+                                             &presentSupport);
+
+        if (presentSupport) {
+            indices.presentsFamily = i;
+        }
+
+        if (indices.isComplete()) break;
 
         i++;
     }
@@ -97,10 +105,10 @@ int rateDeviceSuitability(VkPhysicalDevice device) {
     return score;
 }
 
-bool isDeviceSuitable(VkPhysicalDevice device) {
+bool VulkanAPI::isDeviceSuitable(VkPhysicalDevice device) {
     VulkanAPI::QueueFamilyIndices indices = findQueueFamilies(device);
 
-    return indices.graphicsFamily.has_value();
+    return indices.isComplete();
 }
 
 void VulkanAPI::pickPhysicalDevice() {
@@ -118,16 +126,17 @@ void VulkanAPI::pickPhysicalDevice() {
     std::multimap<int, VkPhysicalDevice> candidates;
 
     for (const auto& device : devices) {
-        int score = rateDeviceSuitability(device);
-        candidates.insert(std::make_pair(score, device));
+        if (isDeviceSuitable(device)) {
+            physicalDevice = device;
+            break;
+        }
     }
 
-    if (candidates.rbegin()->first > 0) {
-        physicalDevice = candidates.rbegin()->second;
-    } else {
+    if (physicalDevice == VK_NULL_HANDLE) {
         ASH_ERROR("No suitable device found");
         throw std::runtime_error("");
     }
+
 }
 
 void VulkanAPI::createInstance() {
@@ -211,23 +220,29 @@ void VulkanAPI::setupDebugMessenger() {
 void VulkanAPI::createLogicalDevice() {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
-    VkDeviceQueueCreateInfo queueCreateInfo{};
-    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
-    queueCreateInfo.queueCount = 1;
-
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(),
+                                              indices.presentsFamily.value()};
+    
     float queuePriority = 1.0f;
-    queueCreateInfo.pQueuePriorities = &queuePriority;
+    for (uint32_t queueFamily : uniqueQueueFamilies) {
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = queueFamily;
+        queueCreateInfo.queueCount = 1;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+        queueCreateInfos.push_back(queueCreateInfo);
+    }
 
     VkPhysicalDeviceFeatures deviceFeatures{};
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.pQueueCreateInfos = &queueCreateInfo;
-    createInfo.queueCreateInfoCount = 1;
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();
+    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pEnabledFeatures = &deviceFeatures;
-
     createInfo.enabledExtensionCount = 0;
+
     if (enableValidationLayers) {
         createInfo.enabledLayerCount =
             static_cast<uint32_t>(validationLayers.size());
@@ -243,10 +258,12 @@ void VulkanAPI::createLogicalDevice() {
     }
 
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+    vkGetDeviceQueue(device, indices.presentsFamily.value(), 0, &presentQueue);
 }
 
 void VulkanAPI::createSurface(GLFWwindow* window) {
-    VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface); 
+    VkResult result =
+        glfwCreateWindowSurface(instance, window, nullptr, &surface);
     if (result != VK_SUCCESS) {
         ASH_ERROR("Failed to create window surface, {}", result);
         throw std::runtime_error("");
@@ -265,7 +282,6 @@ void VulkanAPI::cleanup() {
     ASH_INFO("Cleaning up graphics API");
 
     vkDestroyDevice(device, nullptr);
-
 
     if (enableValidationLayers)
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);

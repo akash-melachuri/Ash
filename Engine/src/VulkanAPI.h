@@ -4,12 +4,19 @@
 
 #include <GLFW/glfw3.h>
 
+#include "Core.h"
+
 namespace Ash {
 
 class VulkanAPI {
    public:
     struct QueueFamilyIndices {
         std::optional<uint32_t> graphicsFamily;
+        std::optional<uint32_t> presentsFamily;
+
+        bool isComplete() {
+            return graphicsFamily.has_value() && presentsFamily.has_value();
+        }
     };
 
    public:
@@ -26,6 +33,9 @@ class VulkanAPI {
     void createSurface(GLFWwindow* window);
     void pickPhysicalDevice();
     void createLogicalDevice();
+    
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    bool isDeviceSuitable(VkPhysicalDevice device);
 
     VkInstance instance;
 
@@ -33,7 +43,9 @@ class VulkanAPI {
 
     VkPhysicalDevice physicalDevice;
     VkDevice device;
+
     VkQueue graphicsQueue;
+    VkQueue presentQueue;
 
     VkSurfaceKHR surface;
 
