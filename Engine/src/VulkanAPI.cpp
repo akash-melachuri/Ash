@@ -42,7 +42,8 @@ VulkanAPI::VulkanAPI() {}
 
 VulkanAPI::~VulkanAPI() {}
 
-VulkanAPI::QueueFamilyIndices VulkanAPI::findQueueFamilies(VkPhysicalDevice device) {
+VulkanAPI::QueueFamilyIndices VulkanAPI::findQueueFamilies(
+    VkPhysicalDevice device) {
     VulkanAPI::QueueFamilyIndices indices;
 
     uint32_t queueFamilyCount = 0;
@@ -105,8 +106,29 @@ int rateDeviceSuitability(VkPhysicalDevice device) {
     return score;
 }
 
+bool VulkanAPI::checkDeviceExtensionSupport(VkPhysicalDevice device) {
+    uint32_t extensionsCount;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionsCount,
+                                         nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionsCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionsCount,
+                                         availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(deviceExtensions.begin(),
+                                             deviceExtensions.end());
+
+    for (const auto& extension : availableExtensions) {
+        requiredExtensions.erase(extension.extensionName);
+    }
+
+    return requiredExtensions.empty();
+}
+
 bool VulkanAPI::isDeviceSuitable(VkPhysicalDevice device) {
     VulkanAPI::QueueFamilyIndices indices = findQueueFamilies(device);
+
+    checkDeviceExtensionSupport(device);
 
     return indices.isComplete();
 }
@@ -128,6 +150,10 @@ void VulkanAPI::pickPhysicalDevice() {
     for (const auto& device : devices) {
         if (isDeviceSuitable(device)) {
             physicalDevice = device;
+            VkPhysicalDeviceProperties properties;
+            vkGetPhysicalDeviceProperties(device, &properties);
+            ASH_INFO("Selecting {} as the physical device",
+                     properties.deviceName);
             break;
         }
     }
@@ -136,7 +162,6 @@ void VulkanAPI::pickPhysicalDevice() {
         ASH_ERROR("No suitable device found");
         throw std::runtime_error("");
     }
-
 }
 
 void VulkanAPI::createInstance() {
@@ -190,18 +215,6 @@ void VulkanAPI::createInstance() {
         ASH_ERROR("Failed to initialize vulkan");
         throw std::runtime_error("");
     }
-
-    uint32_t extensionsCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount, nullptr);
-
-    std::vector<VkExtensionProperties> availableExtensions(extensionsCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount,
-                                           availableExtensions.data());
-
-    ASH_INFO("Available extensions: ");
-    for (const auto& extension : availableExtensions) {
-        ASH_INFO(extension.extensionName);
-    }
 }
 
 void VulkanAPI::setupDebugMessenger() {
@@ -223,7 +236,7 @@ void VulkanAPI::createLogicalDevice() {
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(),
                                               indices.presentsFamily.value()};
-    
+
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies) {
         VkDeviceQueueCreateInfo queueCreateInfo{};
@@ -239,7 +252,8 @@ void VulkanAPI::createLogicalDevice() {
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
-    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+    createInfo.queueCreateInfoCount =
+        static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pEnabledFeatures = &deviceFeatures;
     createInfo.enabledExtensionCount = 0;
 

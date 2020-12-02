@@ -1,5 +1,6 @@
 #pragma once
 
+// Make sure that vulkan header is included before GLFW
 #include <vulkan/vulkan.hpp>
 
 #include <GLFW/glfw3.h>
@@ -33,9 +34,10 @@ class VulkanAPI {
     void createSurface(GLFWwindow* window);
     void pickPhysicalDevice();
     void createLogicalDevice();
-    
+
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
     bool isDeviceSuitable(VkPhysicalDevice device);
+    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
     VkInstance instance;
 
@@ -51,6 +53,9 @@ class VulkanAPI {
 
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"};
+
+    const std::vector<const char*> deviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 #ifndef ASH_DEBUG
     const bool enableValidationLayers = false;
