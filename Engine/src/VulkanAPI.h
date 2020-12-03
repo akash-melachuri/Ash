@@ -1,6 +1,5 @@
 #pragma once
 
-// Make sure that vulkan header is included before GLFW
 #include <vulkan/vulkan.hpp>
 
 #include <GLFW/glfw3.h>
@@ -20,6 +19,12 @@ class VulkanAPI {
         }
     };
 
+    struct SwapChainSupportDetails {
+        VkSurfaceCapabilitiesKHR capabilities;
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR> presentModes;
+    };
+
    public:
     VulkanAPI();
     ~VulkanAPI();
@@ -36,6 +41,7 @@ class VulkanAPI {
     void createLogicalDevice();
 
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     bool isDeviceSuitable(VkPhysicalDevice device);
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 

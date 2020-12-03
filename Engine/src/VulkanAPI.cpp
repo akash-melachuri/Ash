@@ -76,6 +76,34 @@ VulkanAPI::QueueFamilyIndices VulkanAPI::findQueueFamilies(
     return indices;
 }
 
+VulkanAPI::SwapChainSupportDetails VulkanAPI::querySwapChainSupport(
+    VkPhysicalDevice device) {
+    SwapChainSupportDetails details;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface,
+                                              &details.capabilities);
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount,
+                                         nullptr);
+
+    if (formatCount != 0) {
+        details.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount,
+                                             details.formats.data());
+    }
+
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface,
+                                              &presentModeCount, nullptr);
+
+    if (presentModeCount != 0) {
+        details.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(
+            device, surface, &presentModeCount, details.presentModes.data());
+    }
+
+    return details;
+}
+
 void populateDebugMessengerCreateInfo(
     VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
     createInfo = {};
@@ -128,12 +156,22 @@ bool VulkanAPI::checkDeviceExtensionSupport(VkPhysicalDevice device) {
 bool VulkanAPI::isDeviceSuitable(VkPhysicalDevice device) {
     VulkanAPI::QueueFamilyIndices indices = findQueueFamilies(device);
 
-    checkDeviceExtensionSupport(device);
+    bool extensionsSupported = checkDeviceExtensionSupport(device);
 
-    return indices.isComplete();
+    bool swapChainAdequate = false;
+    if (extensionsSupported) {
+        SwapChainSupportDetails swapChainSupport =
+            querySwapChainSupport(device);
+        swapChainAdequate = !swapChainSupport.formats.empty() &&
+                            !swapChainSupport.presentModes.empty();
+    }
+
+    return indices.isComplete() && extensionsSupported && swapChainAdequate;
 }
 
 void VulkanAPI::pickPhysicalDevice() {
+    physicalDevice = VK_NULL_HANDLE;
+
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -215,6 +253,8 @@ void VulkanAPI::createInstance() {
         ASH_ERROR("Failed to initialize vulkan");
         throw std::runtime_error("");
     }
+
+    ASH_INFO("Initialized Vulkan instance");
 }
 
 void VulkanAPI::setupDebugMessenger() {
@@ -255,7 +295,9 @@ void VulkanAPI::createLogicalDevice() {
     createInfo.queueCreateInfoCount =
         static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pEnabledFeatures = &deviceFeatures;
-    createInfo.enabledExtensionCount = 0;
+    createInfo.enabledExtensionCount =
+        static_cast<uint32_t>(deviceExtensions.size());
+    createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
     if (enableValidationLayers) {
         createInfo.enabledLayerCount =
@@ -282,6 +324,8 @@ void VulkanAPI::createSurface(GLFWwindow* window) {
         ASH_ERROR("Failed to create window surface, {}", result);
         throw std::runtime_error("");
     }
+
+    ASH_INFO("Created Vulkan surface");
 }
 
 void VulkanAPI::init(GLFWwindow* window) {
