@@ -3,6 +3,7 @@
 #include <bits/stdint-uintn.h>
 
 #include <array>
+#include <csignal>
 #include <map>
 #include <memory>
 #include <optional>

@@ -104,6 +104,20 @@ VulkanAPI::SwapChainSupportDetails VulkanAPI::querySwapChainSupport(
     return details;
 }
 
+VkSurfaceFormatKHR VulkanAPI::chooseSwapSurfaceFormat(
+    const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+    for (const auto& availableFormat : availableFormats) {
+        if (availableFormat.format == VK_FORMAT_B8G8R8_SRGB &&
+            availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+            return availableFormat;
+        }
+    }
+
+    // Consider ranking formats and choosing best option if desired format isn't
+    // found
+    return availableFormats[0];
+}
+
 void populateDebugMessengerCreateInfo(
     VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
     createInfo = {};
@@ -175,10 +189,7 @@ void VulkanAPI::pickPhysicalDevice() {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
-    if (deviceCount == 0) {
-        ASH_ERROR("No devices with Vulkan support found");
-        throw std::runtime_error("");
-    }
+    ASH_ASSERT(deviceCount != 0, "No devices with Vulkan support found");
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
@@ -196,10 +207,7 @@ void VulkanAPI::pickPhysicalDevice() {
         }
     }
 
-    if (physicalDevice == VK_NULL_HANDLE) {
-        ASH_ERROR("No suitable device found");
-        throw std::runtime_error("");
-    }
+    ASH_ASSERT(physicalDevice != VK_NULL_HANDLE, "No suitable device found");
 }
 
 void VulkanAPI::createInstance() {
@@ -249,10 +257,8 @@ void VulkanAPI::createInstance() {
         createInfo.pNext = nullptr;
     }
 
-    if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
-        ASH_ERROR("Failed to initialize vulkan");
-        throw std::runtime_error("");
-    }
+    ASH_ASSERT(vkCreateInstance(&createInfo, nullptr, &instance) == VK_SUCCESS,
+               "Failed to initialize vulkan");
 
     ASH_INFO("Initialized Vulkan instance");
 }
@@ -263,11 +269,9 @@ void VulkanAPI::setupDebugMessenger() {
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
 
-    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr,
-                                     &debugMessenger) != VK_SUCCESS) {
-        ASH_ERROR("Failed to setup Debug Messenger");
-        throw std::runtime_error("");
-    }
+    ASH_ASSERT(CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr,
+                                            &debugMessenger) == VK_SUCCESS,
+               "Failed to setup Debug Messenger");
 }
 
 void VulkanAPI::createLogicalDevice() {
@@ -307,11 +311,9 @@ void VulkanAPI::createLogicalDevice() {
         createInfo.enabledLayerCount = 0;
     }
 
-    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) !=
-        VK_SUCCESS) {
-        ASH_ERROR("Couldn't create logical device");
-        throw std::runtime_error("");
-    }
+    ASH_ASSERT(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) ==
+                   VK_SUCCESS,
+               "Couldn't create logical device");
 
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(device, indices.presentsFamily.value(), 0, &presentQueue);
@@ -320,10 +322,8 @@ void VulkanAPI::createLogicalDevice() {
 void VulkanAPI::createSurface(GLFWwindow* window) {
     VkResult result =
         glfwCreateWindowSurface(instance, window, nullptr, &surface);
-    if (result != VK_SUCCESS) {
-        ASH_ERROR("Failed to create window surface, {}", result);
-        throw std::runtime_error("");
-    }
+    ASH_ASSERT(result == VK_SUCCESS, "Failed to create window surface, {}",
+               result);
 
     ASH_INFO("Created Vulkan surface");
 }
