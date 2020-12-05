@@ -6,4 +6,9 @@ Build Dependencies:
 - glm (included as submodule)
 - spdlog (included as submodule)
 
-Game directory is an example of a project that uses the engine
+If CMake fails to find Vulkan and you have the Vulkan SDK installed, you may need to add the below lines to the top of CMakeLists.txt:
+```
+set(Vulkan_LIB "path/to/vulkan-1.lib")
+set(Vulkan_INCLUDE_DIR "path/to/vulkan/include")
+```
+
