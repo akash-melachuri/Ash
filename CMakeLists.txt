@@ -22,6 +22,10 @@ file(GLOB_RECURSE SOURCES Engine/*.cpp)
 
 add_library(ash ${SOURCES})
 target_precompile_headers(ash PRIVATE Engine/ashpch.h)
+target_compile_options(ash PRIVATE
+  $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic>
+)
 
 target_link_libraries(ash glfw)
 target_link_libraries(ash Vulkan::Vulkan)
@@ -30,4 +34,9 @@ target_link_libraries(ash spdlog)
 
 file(GLOB_RECURSE GAME_SOURCES Game/*.cpp)
 add_executable(game ${GAME_SOURCES})
+target_compile_options(game PRIVATE
+  $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic>
+)
 target_link_libraries(game ash)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT)
