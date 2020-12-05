@@ -16,7 +16,7 @@ App::App() {
 
     // Initialize graphics API
     api = std::make_unique<VulkanAPI>();
-    api->init(window->getInstance());
+    api->init();
 }
 
 App::~App() {}

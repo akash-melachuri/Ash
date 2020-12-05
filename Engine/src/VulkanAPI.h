@@ -29,23 +29,26 @@ class VulkanAPI {
     VulkanAPI();
     ~VulkanAPI();
 
-    void init(GLFWwindow* window);
+    void init();
     void cleanup();
 
    private:
     bool checkValidationSupport();
     void createInstance();
     void setupDebugMessenger();
-    void createSurface(GLFWwindow* window);
+    void createSurface();
     void pickPhysicalDevice();
     void createLogicalDevice();
 
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-    bool isDeviceSuitable(VkPhysicalDevice device);
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
         const std::vector<VkSurfaceFormatKHR>& availableFormats);
+    VkPresentModeKHR chooseSwapPresentMode(
+        const std::vector<VkPresentModeKHR>& availablePresentModes);
+
+    bool isDeviceSuitable(VkPhysicalDevice device);
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
     VkInstance instance;
 

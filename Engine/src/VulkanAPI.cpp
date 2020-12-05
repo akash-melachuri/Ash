@@ -1,5 +1,7 @@
 #include "VulkanAPI.h"
 
+#include "App.h"
+
 #include <set>
 
 namespace Ash {
@@ -116,6 +118,15 @@ VkSurfaceFormatKHR VulkanAPI::chooseSwapSurfaceFormat(
     // Consider ranking formats and choosing best option if desired format isn't
     // found
     return availableFormats[0];
+}
+
+VkPresentModeKHR chooseSwapPresentMode(
+    const std::vector<VkPresentModeKHR>& availablePresentModes) {
+    for (const auto& availablePresentMode : availablePresentModes) {
+        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+            return availablePresentMode;
+    }
+    return VK_PRESENT_MODE_FIFO_KHR;
 }
 
 void populateDebugMessengerCreateInfo(
@@ -319,7 +330,8 @@ void VulkanAPI::createLogicalDevice() {
     vkGetDeviceQueue(device, indices.presentsFamily.value(), 0, &presentQueue);
 }
 
-void VulkanAPI::createSurface(GLFWwindow* window) {
+void VulkanAPI::createSurface() {
+    GLFWwindow* window = Ash::App::get()->getWindow()->get();
     VkResult result =
         glfwCreateWindowSurface(instance, window, nullptr, &surface);
     ASH_ASSERT(result == VK_SUCCESS, "Failed to create window surface, {}",
@@ -328,10 +340,10 @@ void VulkanAPI::createSurface(GLFWwindow* window) {
     ASH_INFO("Created Vulkan surface");
 }
 
-void VulkanAPI::init(GLFWwindow* window) {
+void VulkanAPI::init() {
     createInstance();
     setupDebugMessenger();
-    createSurface(window);
+    createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
 }

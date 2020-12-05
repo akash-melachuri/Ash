@@ -16,10 +16,12 @@ class App {
 
     inline static App* get() { return instance; }
 
+    inline std::shared_ptr<Window> getWindow() const { return window; }
+
    private:
     void run();
 
-    std::unique_ptr<Window> window;
+    std::shared_ptr<Window> window;
     std::unique_ptr<VulkanAPI> api;  // TODO: Move to Renderer
 
     static App* instance;

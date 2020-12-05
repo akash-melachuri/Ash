@@ -21,7 +21,7 @@ void Window::swapBuffers() const { glfwSwapBuffers(window); }
 
 void Window::pollEvents() const { glfwPollEvents(); }
 
-GLFWwindow* Window::getInstance() const { return window; }
+GLFWwindow* Window::get() const { return window; }
 
 std::unique_ptr<Window> Window::create(const WindowProperties& properties) {
     std::unique_ptr<Window> ret = std::make_unique<Window>();
