@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "Core.h"
 #include "VulkanAPI.h"
 #include "Window.h"
