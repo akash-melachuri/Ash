@@ -2,8 +2,6 @@
 
 #include "App.h"
 
-#include <set>
-
 namespace Ash {
 
 VkResult CreateDebugUtilsMessengerEXT(
@@ -120,13 +118,35 @@ VkSurfaceFormatKHR VulkanAPI::chooseSwapSurfaceFormat(
     return availableFormats[0];
 }
 
-VkPresentModeKHR chooseSwapPresentMode(
+VkPresentModeKHR VulkanAPI::chooseSwapPresentMode(
     const std::vector<VkPresentModeKHR>& availablePresentModes) {
     for (const auto& availablePresentMode : availablePresentModes) {
         if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
             return availablePresentMode;
     }
     return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+VkExtent2D VulkanAPI::chooseSwapExtent(
+    const VkSurfaceCapabilitiesKHR& capabilities) {
+    if (capabilities.currentExtent.width != UINT32_MAX) {
+        return capabilities.currentExtent;
+    } else {
+        int width, height;
+        glfwGetFramebufferSize(App::get()->getWindow()->get(), &width, &height);
+
+        VkExtent2D actualExtent = {static_cast<uint32_t>(width),
+                                   static_cast<uint32_t>(height)};
+
+        actualExtent.width =
+            std::clamp(actualExtent.width, capabilities.minImageExtent.width,
+                       capabilities.maxImageExtent.width);
+        actualExtent.height =
+            std::clamp(actualExtent.height, capabilities.minImageExtent.height,
+                       capabilities.maxImageExtent.height);
+
+        return actualExtent;
+    }
 }
 
 void populateDebugMessengerCreateInfo(
