@@ -76,9 +76,9 @@ VulkanAPI::QueueFamilyIndices VulkanAPI::findQueueFamilies(
     return indices;
 }
 
-VulkanAPI::SwapChainSupportDetails VulkanAPI::querySwapChainSupport(
+VulkanAPI::SwapchainSupportDetails VulkanAPI::querySwapchainSupport(
     VkPhysicalDevice device) {
-    SwapChainSupportDetails details;
+    SwapchainSupportDetails details;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface,
                                               &details.capabilities);
     uint32_t formatCount;
@@ -203,8 +203,8 @@ bool VulkanAPI::isDeviceSuitable(VkPhysicalDevice device) {
 
     bool swapChainAdequate = false;
     if (extensionsSupported) {
-        SwapChainSupportDetails swapChainSupport =
-            querySwapChainSupport(device);
+        SwapchainSupportDetails swapChainSupport =
+            querySwapchainSupport(device);
         swapChainAdequate = !swapChainSupport.formats.empty() &&
                             !swapChainSupport.presentModes.empty();
     }
@@ -348,6 +348,65 @@ void VulkanAPI::createLogicalDevice() {
     vkGetDeviceQueue(device, indices.presentsFamily.value(), 0, &presentQueue);
 }
 
+void VulkanAPI::createSwapchain() {
+    ASH_INFO("Creating swapchain");
+    SwapchainSupportDetails swapchainSupport =
+        querySwapchainSupport(physicalDevice);
+
+    VkSurfaceFormatKHR surfaceFormat =
+        chooseSwapSurfaceFormat(swapchainSupport.formats);
+    VkPresentModeKHR presentMode =
+        chooseSwapPresentMode(swapchainSupport.presentModes);
+    VkExtent2D extent = chooseSwapExtent(swapchainSupport.capabilities);
+
+    uint32_t imageCount = swapchainSupport.capabilities.minImageCount + 1;
+    if (swapchainSupport.capabilities.maxImageCount > 0 &&
+        imageCount > swapchainSupport.capabilities.maxImageCount) {
+        imageCount = swapchainSupport.capabilities.maxImageCount;
+    }
+
+    VkSwapchainCreateInfoKHR createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    createInfo.surface = surface;
+    createInfo.minImageCount = imageCount;
+    createInfo.imageFormat = surfaceFormat.format;
+    createInfo.imageColorSpace = surfaceFormat.colorSpace;
+    createInfo.imageExtent = extent;
+    createInfo.imageArrayLayers = 1;
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+    uint32_t queueFamilyIndicies[] = {indices.graphicsFamily.value(),
+                                      indices.presentsFamily.value()};
+    if (indices.graphicsFamily != indices.presentsFamily) {
+        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        createInfo.queueFamilyIndexCount = 2;
+        createInfo.pQueueFamilyIndices = queueFamilyIndicies;
+    } else {
+        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        createInfo.queueFamilyIndexCount = 0;
+        createInfo.pQueueFamilyIndices = nullptr;
+    }
+
+    createInfo.preTransform = swapchainSupport.capabilities.currentTransform;
+    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    createInfo.presentMode = presentMode;
+    createInfo.clipped = VK_TRUE;
+    createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+    ASH_ASSERT(vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) ==
+                   VK_SUCCESS,
+               "Failed to create swapchain");
+
+    vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
+    swapchainImages.resize(imageCount);
+    vkGetSwapchainImagesKHR(device, swapchain, &imageCount,
+                            swapchainImages.data());
+
+    swapchainImageFormat = surfaceFormat.format;
+    swapchainExtent = extent;
+}
+
 void VulkanAPI::createSurface() {
     GLFWwindow* window = Ash::App::get()->getWindow()->get();
     VkResult result =
@@ -364,11 +423,13 @@ void VulkanAPI::init() {
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+    createSwapchain();
 }
 
 void VulkanAPI::cleanup() {
     ASH_INFO("Cleaning up graphics API");
 
+    vkDestroySwapchainKHR(device, swapchain, nullptr);
     vkDestroyDevice(device, nullptr);
 
     if (enableValidationLayers)

@@ -22,7 +22,7 @@ class VulkanAPI {
         }
     };
 
-    struct SwapChainSupportDetails {
+    struct SwapchainSupportDetails {
         VkSurfaceCapabilitiesKHR capabilities;
         std::vector<VkSurfaceFormatKHR> formats;
         std::vector<VkPresentModeKHR> presentModes;
@@ -42,8 +42,9 @@ class VulkanAPI {
     void createSurface();
     void pickPhysicalDevice();
     void createLogicalDevice();
+    void createSwapchain();
 
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+    SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
         const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR chooseSwapPresentMode(
@@ -65,6 +66,11 @@ class VulkanAPI {
     VkQueue presentQueue;
 
     VkSurfaceKHR surface;
+    std::vector<VkImage> swapchainImages;
+    VkFormat swapchainImageFormat;
+    VkExtent2D swapchainExtent;
+
+    VkSwapchainKHR swapchain;
 
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"};
