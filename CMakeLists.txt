@@ -28,7 +28,7 @@ file(GLOB_RECURSE SOURCES Engine/*.cpp)
 add_library(ash ${SOURCES})
 target_precompile_headers(ash PRIVATE Engine/ashpch.h)
 target_compile_options(ash PRIVATE
-  $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+  $<$<CXX_COMPILER_ID:MSVC>:/W4>
   $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic>
 )
 
@@ -44,4 +44,4 @@ target_compile_options(game PRIVATE
   $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic>
 )
 target_link_libraries(game ash)
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT game)
