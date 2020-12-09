@@ -43,6 +43,7 @@ class VulkanAPI {
     void pickPhysicalDevice();
     void createLogicalDevice();
     void createSwapchain();
+    void createImageViews();
 
     SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
@@ -66,11 +67,12 @@ class VulkanAPI {
     VkQueue presentQueue;
 
     VkSurfaceKHR surface;
-    std::vector<VkImage> swapchainImages;
-    VkFormat swapchainImageFormat;
-    VkExtent2D swapchainExtent;
 
     VkSwapchainKHR swapchain;
+    std::vector<VkImage> swapchainImages;
+    std::vector<VkImageView> swapchainImageViews;
+    VkFormat swapchainImageFormat;
+    VkExtent2D swapchainExtent;
 
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"};
