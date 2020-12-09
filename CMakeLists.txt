@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.16)
 
 project(ash VERSION 1.0.0)
 
+if (DEFINED ENV{VULKAN_SDK})
+	set(VULKAN_LIB "$ENV{VULKAN_SDK}/Lib")
+	set(VULKAN_INCLUDE_DIR "$ENV{VULKAN_SDK}/Lib/INCLUDE")
+endif()
+
 find_package(Vulkan REQUIRED FATAL_ERROR)
 
 set(glm_DIR "vendor/glm/cmake/glm/")
@@ -35,7 +40,7 @@ target_link_libraries(ash spdlog)
 file(GLOB_RECURSE GAME_SOURCES Game/*.cpp)
 add_executable(game ${GAME_SOURCES})
 target_compile_options(game PRIVATE
-  $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+  $<$<CXX_COMPILER_ID:MSVC>:/W4>
   $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic>
 )
 target_link_libraries(game ash)
