@@ -423,13 +423,15 @@ void VulkanAPI::createImageViews() {
         createInfo.subresourceRange.baseMipLevel = 0;
         createInfo.subresourceRange.levelCount = 1;
         createInfo.subresourceRange.baseArrayLayer = 0;
-        createInfo.subresourceRange.layerCount = 0;
+        createInfo.subresourceRange.layerCount = 1;
 
         ASH_ASSERT(vkCreateImageView(device, &createInfo, nullptr,
                                      &swapchainImageViews[i]) == VK_SUCCESS,
                    "Failed to create swapchain image view {}", i);
     }
 }
+
+void VulkanAPI::createGraphicsPipeline() {}
 
 void VulkanAPI::createSurface() {
     GLFWwindow* window = Ash::App::get()->getWindow()->get();
@@ -448,6 +450,7 @@ void VulkanAPI::init() {
     pickPhysicalDevice();
     createLogicalDevice();
     createSwapchain();
+    createImageViews();
 }
 
 void VulkanAPI::cleanup() {

@@ -44,6 +44,7 @@ class VulkanAPI {
     void createLogicalDevice();
     void createSwapchain();
     void createImageViews();
+    void createGraphicsPipeline();
 
     SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
