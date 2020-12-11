@@ -3,5 +3,6 @@ Release/
 .cache/
 .clangd/
 .ccls
+assets/compile.sh
 compile_commands.json
 build_commands.sh

@@ -1,8 +1,24 @@
 #include "VulkanAPI.h"
 
+#include <fstream>
+
 #include "App.h"
 
 namespace Ash {
+
+static std::vector<char> readFile(const char* filename) {
+    std::ifstream istream(filename, std::ios::ate | std::ios::binary);
+
+    ASH_ASSERT(istream.is_open(), "Failed to open file {}", filename);
+
+    size_t size = (size_t)istream.tellg();
+    std::vector<char> buffer(size);
+    istream.seekg(0);
+    istream.read(buffer.data(), size);
+    istream.close();
+
+    return buffer;
+}
 
 VkResult CreateDebugUtilsMessengerEXT(
     VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
@@ -431,7 +447,29 @@ void VulkanAPI::createImageViews() {
     }
 }
 
-void VulkanAPI::createGraphicsPipeline() {}
+void VulkanAPI::createGraphicsPipeline() {
+    std::vector<char> vert = readFile("assets/shaders/vert.spv");
+    std::vector<char> frag = readFile("assets/shaders/frag.spv");
+
+    VkShaderModule vertShaderModule = createShaderModule(vert);
+    VkShaderModule fragShaderModule = createShaderModule(frag);
+
+    vkDestroyShaderModule(device, vertShaderModule, nullptr);
+    vkDestroyShaderModule(device, fragShaderModule, nullptr);
+}
+
+VkShaderModule VulkanAPI::createShaderModule(const std::vector<char>& code) {
+    VkShaderModuleCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.codeSize = code.size();
+    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+    VkShaderModule module;
+    ASH_ASSERT(vkCreateShaderModule(device, &createInfo, nullptr, &module) ==
+                   VK_SUCCESS,
+               "Failed to create shader module");
+    return module;
+}
 
 void VulkanAPI::createSurface() {
     GLFWwindow* window = Ash::App::get()->getWindow()->get();
@@ -451,6 +489,7 @@ void VulkanAPI::init() {
     createLogicalDevice();
     createSwapchain();
     createImageViews();
+    createGraphicsPipeline();
 }
 
 void VulkanAPI::cleanup() {

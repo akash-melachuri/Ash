@@ -57,6 +57,8 @@ class VulkanAPI {
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
+    VkShaderModule createShaderModule(const std::vector<char>& code);
+
     VkInstance instance;
 
     VkDebugUtilsMessengerEXT debugMessenger;
