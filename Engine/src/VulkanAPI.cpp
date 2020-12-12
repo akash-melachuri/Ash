@@ -50,7 +50,27 @@ debugCallBack(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
               VkDebugUtilsMessageTypeFlagsEXT messageType,
               const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
               void* pUserData) {
-    ASH_ERROR("Validation Layer: {} ", pCallbackData->pMessage);
+    if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+        std::string type;
+        switch (messageType) {
+            case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
+                type = "General";
+                break;
+            case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
+                type = "Specification Violation";
+                break;
+            case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
+                type = "Performance";
+                break;
+            default:
+                type = "Other";
+                break;
+        }
+        ASH_ERROR("{} Validation Layer: {} ", type, pCallbackData->pMessage);
+        if (pUserData) {
+            ASH_WARN("User data is defined");
+        }
+    }
     return VK_FALSE;
 }
 
@@ -448,11 +468,30 @@ void VulkanAPI::createImageViews() {
 }
 
 void VulkanAPI::createGraphicsPipeline() {
-    std::vector<char> vert = readFile("assets/shaders/vert.spv");
-    std::vector<char> frag = readFile("assets/shaders/frag.spv");
+    std::vector<char> vert = readFile("assets/shaders/shader.vert.spv");
+    std::vector<char> frag = readFile("assets/shaders/shader.frag.spv");
 
     VkShaderModule vertShaderModule = createShaderModule(vert);
     VkShaderModule fragShaderModule = createShaderModule(frag);
+
+    VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+    vertShaderStageInfo.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vertShaderStageInfo.module = vertShaderModule;
+    vertShaderStageInfo.pName = "main";
+    vertShaderStageInfo.pSpecializationInfo = nullptr;
+
+    VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+    fragShaderStageInfo.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    fragShaderStageInfo.module = fragShaderModule;
+    fragShaderStageInfo.pName = "main";
+    fragShaderStageInfo.pSpecializationInfo = nullptr;
+
+    VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo,
+                                                      fragShaderStageInfo};
 
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
