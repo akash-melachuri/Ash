@@ -468,6 +468,38 @@ void VulkanAPI::createImageViews() {
     }
 }
 
+void VulkanAPI::createRenderPass() {
+    VkAttachmentDescription colorAttachment{};
+    colorAttachment.format = swapchainImageFormat;
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference colorAttachmentRef{};
+    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colorAttachmentRef;
+
+    VkRenderPassCreateInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = 1;
+    renderPassInfo.pAttachments = &colorAttachment;
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
+
+    ASH_ASSERT(vkCreateRenderPass(device, &renderPassInfo, nullptr,
+                                  &renderPass) == VK_SUCCESS,
+               "Failed to create render pass");
+}
+
 void VulkanAPI::createGraphicsPipeline() {
     std::vector<char> vert = readFile("assets/shaders/shader.vert.spv");
     std::vector<char> frag = readFile("assets/shaders/shader.frag.spv");
@@ -623,6 +655,7 @@ void VulkanAPI::init() {
     createLogicalDevice();
     createSwapchain();
     createImageViews();
+    createRenderPass();
     createGraphicsPipeline();
 }
 
@@ -630,6 +663,7 @@ void VulkanAPI::cleanup() {
     ASH_INFO("Cleaning up graphics API");
 
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    vkDestroyRenderPass(device, renderPass, nullptr);
 
     for (auto imageView : swapchainImageViews)
         vkDestroyImageView(device, imageView, nullptr);

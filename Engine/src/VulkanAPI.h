@@ -44,6 +44,7 @@ class VulkanAPI {
     void createLogicalDevice();
     void createSwapchain();
     void createImageViews();
+    void createRenderPass();
     void createGraphicsPipeline();
 
     SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
@@ -77,6 +78,7 @@ class VulkanAPI {
     VkFormat swapchainImageFormat;
     VkExtent2D swapchainExtent;
 
+    VkRenderPass renderPass;
     VkPipelineLayout pipelineLayout;
 
     const std::vector<const char*> validationLayers = {
