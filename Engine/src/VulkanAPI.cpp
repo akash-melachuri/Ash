@@ -620,8 +620,53 @@ void VulkanAPI::createGraphicsPipeline() {
                                       &pipelineLayout) == VK_SUCCESS,
                "Failed to create pipeline layout");
 
+    VkGraphicsPipelineCreateInfo pipelineInfo{};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.stageCount = 2;
+    pipelineInfo.pStages = shaderStages;
+
+    pipelineInfo.pVertexInputState = &vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &inputAssembly;
+    pipelineInfo.pViewportState = &viewportState;
+    pipelineInfo.pRasterizationState = &rasterizer;
+    pipelineInfo.pMultisampleState = &multisampling;
+    pipelineInfo.pDepthStencilState = nullptr;
+    pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.pDynamicState = nullptr;
+
+    pipelineInfo.layout = pipelineLayout;
+
+    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.subpass = 0;
+
+    ASH_ASSERT(
+        vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo,
+                                  nullptr, &graphicsPipeline) == VK_SUCCESS,
+        "Failed to create graphics pipeline");
+
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
+}
+
+void VulkanAPI::createFramebuffers() {
+    swapchainFramebuffers.resize(swapchainImageViews.size());
+
+    for (size_t i = 0; i < swapchainImageViews.size(); i++) {
+        VkImageView attachments[] = {swapchainImageViews[i]};
+
+        VkFramebufferCreateInfo frameBufferInfo{};
+        frameBufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        frameBufferInfo.renderPass = renderPass;
+        frameBufferInfo.attachmentCount = 1;
+        frameBufferInfo.pAttachments = attachments;
+        frameBufferInfo.width = swapchainExtent.width;
+        frameBufferInfo.height = swapchainExtent.height;
+        frameBufferInfo.layers = 1;
+
+        ASH_ASSERT(vkCreateFramebuffer(device, &frameBufferInfo, nullptr,
+                                       &swapchainFramebuffers[i]) == VK_SUCCESS,
+                   "Failed to create framebuffer {}", i);
+    }
 }
 
 VkShaderModule VulkanAPI::createShaderModule(const std::vector<char>& code) {
@@ -662,6 +707,10 @@ void VulkanAPI::init() {
 void VulkanAPI::cleanup() {
     ASH_INFO("Cleaning up graphics API");
 
+    for (auto framebuffer : swapchainFramebuffers)
+        vkDestroyFramebuffer(device, framebuffer, nullptr);
+
+    vkDestroyPipeline(device, graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
     vkDestroyRenderPass(device, renderPass, nullptr);
 

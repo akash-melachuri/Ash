@@ -46,6 +46,7 @@ class VulkanAPI {
     void createImageViews();
     void createRenderPass();
     void createGraphicsPipeline();
+    void createFramebuffers();
 
     SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
@@ -73,13 +74,17 @@ class VulkanAPI {
     VkSurfaceKHR surface;
 
     VkSwapchainKHR swapchain;
-    std::vector<VkImage> swapchainImages;
-    std::vector<VkImageView> swapchainImageViews;
     VkFormat swapchainImageFormat;
     VkExtent2D swapchainExtent;
 
+    std::vector<VkImage> swapchainImages;
+    std::vector<VkImageView> swapchainImageViews;
+    std::vector<VkFramebuffer> swapchainFramebuffers;
+
     VkRenderPass renderPass;
     VkPipelineLayout pipelineLayout;
+
+    VkPipeline graphicsPipeline;
 
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"};
