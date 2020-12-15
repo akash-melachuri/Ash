@@ -13,6 +13,14 @@ namespace Ash {
 
 class VulkanAPI {
    public:
+    VulkanAPI();
+    ~VulkanAPI();
+
+    void init();
+    void draw();
+    void cleanup();
+
+   private:
     struct QueueFamilyIndices {
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentsFamily;
@@ -28,15 +36,6 @@ class VulkanAPI {
         std::vector<VkPresentModeKHR> presentModes;
     };
 
-   public:
-    VulkanAPI();
-    ~VulkanAPI();
-
-    void init();
-    void draw();
-    void cleanup();
-
-   private:
     bool checkValidationSupport();
     void createInstance();
     void setupDebugMessenger();
@@ -51,6 +50,8 @@ class VulkanAPI {
     void createCommandPool();
     void createCommandBuffers();
     void createSyncObjects();
+    void cleanupSwapchain();
+    void recreateSwapchain();
 
     SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
@@ -97,6 +98,7 @@ class VulkanAPI {
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
+
     size_t currentFrame = 0;
 
     const std::vector<const char*> validationLayers = {

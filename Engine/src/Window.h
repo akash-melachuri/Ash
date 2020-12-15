@@ -25,8 +25,10 @@ class Window {
     void pollEvents() const;
     GLFWwindow* get() const;
 
-    static std::unique_ptr<Window> create(const WindowProperties& properties);
+    static std::shared_ptr<Window> create(const WindowProperties& properties);
     void destroy();
+
+    bool framebufferResized = false;
 
    private:
     GLFWwindow* window;

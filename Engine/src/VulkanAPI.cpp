@@ -770,6 +770,46 @@ void VulkanAPI::createSyncObjects() {
     }
 }
 
+void VulkanAPI::cleanupSwapchain() {
+    for (auto framebuffer : swapchainFramebuffers)
+        vkDestroyFramebuffer(device, framebuffer, nullptr);
+
+    vkFreeCommandBuffers(device, commandPool,
+                         static_cast<uint32_t>(commandBuffers.size()),
+                         commandBuffers.data());
+
+    vkDestroyPipeline(device, graphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    vkDestroyRenderPass(device, renderPass, nullptr);
+
+    for (auto imageView : swapchainImageViews)
+        vkDestroyImageView(device, imageView, nullptr);
+
+    vkDestroySwapchainKHR(device, swapchain, nullptr);
+}
+
+void VulkanAPI::recreateSwapchain() {
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(App::get()->getWindow()->get(), &width, &height);
+    while (width == 0 || height == 0) {
+        glfwGetFramebufferSize(App::get()->getWindow()->get(), &width, &height);
+        glfwWaitEvents();
+    }
+
+    vkDeviceWaitIdle(device);
+
+    ASH_INFO("Recreating swapchain");
+
+    cleanupSwapchain();
+
+    createSwapchain();
+    createImageViews();
+    createRenderPass();
+    createGraphicsPipeline();
+    createFramebuffers();
+    createCommandBuffers();
+}
+
 VkShaderModule VulkanAPI::createShaderModule(const std::vector<char>& code) {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -780,6 +820,7 @@ VkShaderModule VulkanAPI::createShaderModule(const std::vector<char>& code) {
     ASH_ASSERT(vkCreateShaderModule(device, &createInfo, nullptr, &module) ==
                    VK_SUCCESS,
                "Failed to create shader module");
+
     return module;
 }
 
@@ -813,9 +854,17 @@ void VulkanAPI::draw() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE,
                     UINT64_MAX);
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(device, swapchain, UINT64_MAX,
-                          imageAvailableSemaphores[currentFrame],
-                          VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkAcquireNextImageKHR(
+        device, swapchain, UINT64_MAX, imageAvailableSemaphores[currentFrame],
+        VK_NULL_HANDLE, &imageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        recreateSwapchain();
+        return;
+    }
+
+    ASH_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR,
+               "Failed to acquire swapchain image");
 
     if (imagesInFlight[imageIndex] != VK_NULL_HANDLE)
         vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE,
@@ -857,7 +906,15 @@ void VulkanAPI::draw() {
     presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr;
 
-    vkQueuePresentKHR(presentQueue, &presentInfo);
+    result = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
+        App::get()->getWindow()->framebufferResized) {
+        App::get()->getWindow()->framebufferResized = false;
+        recreateSwapchain();
+    } else {
+        ASH_ASSERT(result == VK_SUCCESS, "Failed to present swapchain image");
+    }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -867,6 +924,8 @@ void VulkanAPI::cleanup() {
 
     ASH_INFO("Cleaning up graphics API");
 
+    cleanupSwapchain();
+
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
         vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -875,17 +934,6 @@ void VulkanAPI::cleanup() {
 
     vkDestroyCommandPool(device, commandPool, nullptr);
 
-    for (auto framebuffer : swapchainFramebuffers)
-        vkDestroyFramebuffer(device, framebuffer, nullptr);
-
-    vkDestroyPipeline(device, graphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-    vkDestroyRenderPass(device, renderPass, nullptr);
-
-    for (auto imageView : swapchainImageViews)
-        vkDestroyImageView(device, imageView, nullptr);
-
-    vkDestroySwapchainKHR(device, swapchain, nullptr);
     vkDestroyDevice(device, nullptr);
 
     if (enableValidationLayers)

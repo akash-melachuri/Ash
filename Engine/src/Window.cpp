@@ -4,6 +4,12 @@
 
 namespace Ash {
 
+static void framebufferResizeCallback(GLFWwindow* window, int width,
+                                      int height) {
+    auto w = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+    w->framebufferResized = true;
+}
+
 Window::Window() {}
 
 Window::~Window() {}
@@ -23,12 +29,14 @@ void Window::pollEvents() const { glfwPollEvents(); }
 
 GLFWwindow* Window::get() const { return window; }
 
-std::unique_ptr<Window> Window::create(const WindowProperties& properties) {
-    std::unique_ptr<Window> ret = std::make_unique<Window>();
+std::shared_ptr<Window> Window::create(const WindowProperties& properties) {
+    std::shared_ptr<Window> ret = std::make_shared<Window>();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     ret->window = glfwCreateWindow(properties.width, properties.height,
                                    properties.title.c_str(), nullptr, nullptr);
     ASH_ASSERT(ret, "Failed to create window");
+    glfwSetFramebufferSizeCallback(ret->get(), framebufferResizeCallback);
+    glfwSetWindowUserPointer(ret->get(), ret.get());
     return ret;
 }
 
