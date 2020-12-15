@@ -742,16 +742,32 @@ void VulkanAPI::createCommandBuffers() {
     }
 }
 
-void VulkanAPI::createSemaphores() {
+void VulkanAPI::createSyncObjects() {
+    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    imagesInFlight.resize(swapchainImages.size(), VK_NULL_HANDLE);
+
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    ASH_ASSERT(vkCreateSemaphore(device, &semaphoreInfo, nullptr,
-                                 &imageAvailableSemaphore) == VK_SUCCESS,
-               "Failed to create semaphore");
-    ASH_ASSERT(vkCreateSemaphore(device, &semaphoreInfo, nullptr,
-                                 &renderFinishedSemaphore) == VK_SUCCESS,
-               "Failed to create semaphore");
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        ASH_ASSERT(
+            vkCreateSemaphore(device, &semaphoreInfo, nullptr,
+                              &imageAvailableSemaphores[i]) == VK_SUCCESS,
+            "Failed to create semaphore");
+        ASH_ASSERT(
+            vkCreateSemaphore(device, &semaphoreInfo, nullptr,
+                              &renderFinishedSemaphores[i]) == VK_SUCCESS,
+            "Failed to create semaphore");
+        ASH_ASSERT(vkCreateFence(device, &fenceInfo, nullptr,
+                                 &inFlightFences[i]) == VK_SUCCESS,
+                   "Failed to create fence");
+    }
 }
 
 VkShaderModule VulkanAPI::createShaderModule(const std::vector<char>& code) {
@@ -790,18 +806,27 @@ void VulkanAPI::init() {
     createFramebuffers();
     createCommandPool();
     createCommandBuffers();
-    createSemaphores();
+    createSyncObjects();
 }
 
 void VulkanAPI::draw() {
+    vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE,
+                    UINT64_MAX);
     uint32_t imageIndex;
     vkAcquireNextImageKHR(device, swapchain, UINT64_MAX,
-                          imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+                          imageAvailableSemaphores[currentFrame],
+                          VK_NULL_HANDLE, &imageIndex);
+
+    if (imagesInFlight[imageIndex] != VK_NULL_HANDLE)
+        vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE,
+                        UINT64_MAX);
+
+    imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = {imageAvailableSemaphore};
+    VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
     VkPipelineStageFlags waitStages[] = {
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
@@ -810,12 +835,14 @@ void VulkanAPI::draw() {
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
 
-    VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
+    VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    ASH_ASSERT(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) ==
-                   VK_SUCCESS,
+    vkResetFences(device, 1, &inFlightFences[currentFrame]);
+
+    ASH_ASSERT(vkQueueSubmit(graphicsQueue, 1, &submitInfo,
+                             inFlightFences[currentFrame]) == VK_SUCCESS,
                "Failed to submit render command buffer");
 
     VkPresentInfoKHR presentInfo{};
@@ -832,7 +859,7 @@ void VulkanAPI::draw() {
 
     vkQueuePresentKHR(presentQueue, &presentInfo);
 
-    vkQueueWaitIdle(presentQueue);
+    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void VulkanAPI::cleanup() {
@@ -840,8 +867,11 @@ void VulkanAPI::cleanup() {
 
     ASH_INFO("Cleaning up graphics API");
 
-    vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
-    vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+        vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+        vkDestroyFence(device, inFlightFences[i], nullptr);
+    }
 
     vkDestroyCommandPool(device, commandPool, nullptr);
 

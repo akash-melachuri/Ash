@@ -50,7 +50,7 @@ class VulkanAPI {
     void createFramebuffers();
     void createCommandPool();
     void createCommandBuffers();
-    void createSemaphores();
+    void createSyncObjects();
 
     SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
@@ -93,8 +93,11 @@ class VulkanAPI {
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;
 
-    VkSemaphore imageAvailableSemaphore;
-    VkSemaphore renderFinishedSemaphore;
+    std::vector<VkSemaphore> imageAvailableSemaphores;
+    std::vector<VkSemaphore> renderFinishedSemaphores;
+    std::vector<VkFence> inFlightFences;
+    std::vector<VkFence> imagesInFlight;
+    size_t currentFrame = 0;
 
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"};
@@ -102,7 +105,7 @@ class VulkanAPI {
     const std::vector<const char*> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-    const int MAX_FRAMES_IN_FLIGHT = 2;
+    const size_t MAX_FRAMES_IN_FLIGHT = 2;
 
 #ifndef ASH_DEBUG
     const bool enableValidationLayers = false;
