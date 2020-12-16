@@ -4,6 +4,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+
 #include <optional>
 #include <vector>
 
@@ -19,6 +21,8 @@ class VulkanAPI {
     void init();
     void draw();
     void cleanup();
+
+    void setClearColor(const glm::vec4& color);
 
    private:
     struct QueueFamilyIndices {
@@ -49,6 +53,7 @@ class VulkanAPI {
     void createFramebuffers();
     void createCommandPool();
     void createCommandBuffers();
+    void recordCommandBuffers();
     void createSyncObjects();
     void cleanupSwapchain();
     void recreateSwapchain();
@@ -100,6 +105,8 @@ class VulkanAPI {
     std::vector<VkFence> imagesInFlight;
 
     size_t currentFrame = 0;
+
+    glm::vec4 clearColor{0.0f, 0.0f, 0.0f, 1.0f};
 
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"};

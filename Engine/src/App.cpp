@@ -43,6 +43,7 @@ void App::cleanup() {
 
 void App::run() {
     APP_INFO("Running!");
+
     while (!window->shouldClose()) {
         api->draw();
 

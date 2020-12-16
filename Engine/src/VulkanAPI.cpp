@@ -707,6 +707,10 @@ void VulkanAPI::createCommandBuffers() {
                                         commandBuffers.data()) == VK_SUCCESS,
                "Failed to allocate command buffers");
 
+    recordCommandBuffers();
+}
+
+void VulkanAPI::recordCommandBuffers() {
     for (size_t i = 0; i < commandBuffers.size(); i++) {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -724,7 +728,8 @@ void VulkanAPI::createCommandBuffers() {
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swapchainExtent;
 
-        VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+        VkClearValue clearColor = {{{this->clearColor.r, this->clearColor.g,
+                                     this->clearColor.b, this->clearColor.a}}};
         renderPassInfo.clearValueCount = 1;
         renderPassInfo.pClearValues = &clearColor;
 
@@ -941,6 +946,14 @@ void VulkanAPI::cleanup() {
 
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
+}
+
+void VulkanAPI::setClearColor(const glm::vec4& color) {
+    clearColor = color;
+
+    vkQueueWaitIdle(graphicsQueue);
+    vkResetCommandPool(device, commandPool, 0);
+    recordCommandBuffers();
 }
 
 bool VulkanAPI::checkValidationSupport() {
