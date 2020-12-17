@@ -2,6 +2,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <string>
+
 namespace Ash {
 
 struct WindowProperties {

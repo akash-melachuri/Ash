@@ -2,9 +2,16 @@
 
 namespace Ash {
 
-std::unique_ptr<VulkanAPI> Renderer::api = std::make_unique<VulkanAPI>();
+std::shared_ptr<VulkanAPI> Renderer::api = std::make_shared<VulkanAPI>();
+std::vector<Pipeline> Renderer::pipelines;
 
-void Renderer::init() { api->init(); }
+void Renderer::loadPipeline(const Pipeline& pipeline) {
+    pipelines.push_back(pipeline);
+}
+
+void Renderer::setPipeline(size_t i) { api->setPipeline(i); }
+
+void Renderer::init() { api->init(pipelines); }
 
 void Renderer::render() { api->render(); }
 

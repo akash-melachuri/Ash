@@ -1,24 +1,10 @@
 #include "VulkanAPI.h"
 
-#include <fstream>
-
 #include "App.h"
+#include "Helper.h"
+#include "Shader.h"
 
 namespace Ash {
-
-static std::vector<char> readFile(const char* filename) {
-    std::ifstream istream(filename, std::ios::ate | std::ios::binary);
-
-    ASH_ASSERT(istream.is_open(), "Failed to open file {}", filename);
-
-    size_t size = (size_t)istream.tellg();
-    std::vector<char> buffer(size);
-    istream.seekg(0);
-    istream.read(buffer.data(), size);
-    istream.close();
-
-    return buffer;
-}
 
 VkResult CreateDebugUtilsMessengerEXT(
     VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
@@ -512,9 +498,16 @@ void VulkanAPI::createRenderPass() {
                "Failed to create render pass");
 }
 
-void VulkanAPI::createGraphicsPipeline() {
-    std::vector<char> vert = readFile("assets/shaders/shader.vert.spv");
-    std::vector<char> frag = readFile("assets/shaders/shader.frag.spv");
+void VulkanAPI::createGraphicsPipelines(
+    const std::vector<Pipeline>& pipelines) {
+    pipelineObjects = pipelines;
+
+    graphicsPipelines.resize(pipelines.size() + 1);
+
+    std::vector<char> vert =
+        Helper::readBinaryFile("assets/shaders/shader.vert.spv");
+    std::vector<char> frag =
+        Helper::readBinaryFile("assets/shaders/shader.frag.spv");
 
     VkShaderModule vertShaderModule = createShaderModule(vert);
     VkShaderModule fragShaderModule = createShaderModule(frag);
@@ -634,6 +627,8 @@ void VulkanAPI::createGraphicsPipeline() {
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
+
     pipelineInfo.stageCount = 2;
     pipelineInfo.pStages = shaderStages;
 
@@ -653,8 +648,54 @@ void VulkanAPI::createGraphicsPipeline() {
 
     ASH_ASSERT(
         vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo,
-                                  nullptr, &graphicsPipeline) == VK_SUCCESS,
+                                  nullptr, &graphicsPipelines[0]) == VK_SUCCESS,
         "Failed to create graphics pipeline");
+
+    pipelineInfo.flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
+    pipelineInfo.basePipelineHandle = graphicsPipelines[0];
+    pipelineInfo.basePipelineIndex = -1;
+
+    size_t j = 0;
+    for (const Pipeline& pipeline : pipelines) {
+        std::vector<VkPipelineShaderStageCreateInfo> shaderStageInfos;
+        std::vector<VkShaderModule> shaderModules;
+        for (size_t i = 0; i < pipeline.stages.size(); i++) {
+            std::vector<char> code =
+                Helper::readBinaryFile(pipeline.paths[i].c_str());
+            shaderModules.push_back(createShaderModule(code));
+
+            VkPipelineShaderStageCreateInfo shaderStageInfo{};
+            shaderStageInfo.sType =
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+
+            switch (pipeline.stages[i]) {
+                case ShaderStages::VERTEX_SHADER_STAGE:
+                    shaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+                    break;
+                case ShaderStages::FRAGMENT_SHADER_STAGE:
+                    shaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+                    break;
+            }
+
+            shaderStageInfo.module = shaderModules.back();
+            shaderStageInfo.pName = "main";
+            shaderStageInfo.pSpecializationInfo = nullptr;
+            shaderStageInfos.push_back(shaderStageInfo);
+        }
+
+        pipelineInfo.stageCount = static_cast<uint32_t>(pipeline.stages.size());
+        pipelineInfo.pStages = shaderStageInfos.data();
+
+        ASH_ASSERT(vkCreateGraphicsPipelines(
+                       device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
+                       &graphicsPipelines[j + 1]) == VK_SUCCESS,
+                   "Failed to create user pipeline");
+
+        for (auto& module : shaderModules)
+            vkDestroyShaderModule(device, module, nullptr);
+
+        j++;
+    }
 
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
@@ -737,7 +778,8 @@ void VulkanAPI::recordCommandBuffers() {
                              VK_SUBPASS_CONTENTS_INLINE);
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          graphicsPipeline);
+                          graphicsPipelines[currentPipeline]);
+
         vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
 
         vkCmdEndRenderPass(commandBuffers[i]);
@@ -745,6 +787,8 @@ void VulkanAPI::recordCommandBuffers() {
         ASH_ASSERT(vkEndCommandBuffer(commandBuffers[i]) == VK_SUCCESS,
                    "Failed to record command buffer {}", i);
     }
+
+    shouldRecord = false;
 }
 
 void VulkanAPI::createSyncObjects() {
@@ -783,7 +827,10 @@ void VulkanAPI::cleanupSwapchain() {
                          static_cast<uint32_t>(commandBuffers.size()),
                          commandBuffers.data());
 
-    vkDestroyPipeline(device, graphicsPipeline, nullptr);
+    for (auto pipeline : graphicsPipelines)
+        vkDestroyPipeline(device, pipeline, nullptr);
+
+    // vkDestroyPipeline(device, graphicsPipeline[i], nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
     vkDestroyRenderPass(device, renderPass, nullptr);
 
@@ -810,7 +857,7 @@ void VulkanAPI::recreateSwapchain() {
     createSwapchain();
     createImageViews();
     createRenderPass();
-    createGraphicsPipeline();
+    createGraphicsPipelines(pipelineObjects);
     createFramebuffers();
     createCommandBuffers();
 }
@@ -839,7 +886,7 @@ void VulkanAPI::createSurface() {
     ASH_INFO("Created Vulkan surface");
 }
 
-void VulkanAPI::init() {
+void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createInstance();
     setupDebugMessenger();
     createSurface();
@@ -848,14 +895,18 @@ void VulkanAPI::init() {
     createSwapchain();
     createImageViews();
     createRenderPass();
-    createGraphicsPipeline();
+    createGraphicsPipelines(pipelines);
     createFramebuffers();
     createCommandPool();
     createCommandBuffers();
     createSyncObjects();
+
+    initialized = true;
 }
 
 void VulkanAPI::render() {
+    if (shouldRecord) updateCommandBuffers();
+
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE,
                     UINT64_MAX);
     uint32_t imageIndex;
@@ -948,12 +999,22 @@ void VulkanAPI::cleanup() {
     vkDestroyInstance(instance, nullptr);
 }
 
-void VulkanAPI::setClearColor(const glm::vec4& color) {
-    clearColor = color;
-
+void VulkanAPI::updateCommandBuffers() {
     vkQueueWaitIdle(graphicsQueue);
     vkResetCommandPool(device, commandPool, 0);
     recordCommandBuffers();
+}
+
+void VulkanAPI::setPipeline(size_t i) {
+    currentPipeline = i;
+
+    shouldRecord = true;
+}
+
+void VulkanAPI::setClearColor(const glm::vec4& color) {
+    clearColor = color;
+
+    shouldRecord = true;
 }
 
 bool VulkanAPI::checkValidationSupport() {

@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "Core.h"
+#include "Pipeline.h"
 
 namespace Ash {
 
@@ -18,11 +19,12 @@ class VulkanAPI {
     VulkanAPI();
     ~VulkanAPI();
 
-    void init();
+    void init(const std::vector<Pipeline>& pipelines);
     void render();
     void cleanup();
 
     void setClearColor(const glm::vec4& color);
+    void setPipeline(size_t i);
 
    private:
     struct QueueFamilyIndices {
@@ -49,7 +51,7 @@ class VulkanAPI {
     void createSwapchain();
     void createImageViews();
     void createRenderPass();
-    void createGraphicsPipeline();
+    void createGraphicsPipelines(const std::vector<Pipeline>& pipelines);
     void createFramebuffers();
     void createCommandPool();
     void createCommandBuffers();
@@ -57,6 +59,7 @@ class VulkanAPI {
     void createSyncObjects();
     void cleanupSwapchain();
     void recreateSwapchain();
+    void updateCommandBuffers();
 
     SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
@@ -94,8 +97,13 @@ class VulkanAPI {
     VkRenderPass renderPass;
     VkPipelineLayout pipelineLayout;
 
-    VkPipeline graphicsPipeline;
+    size_t currentPipeline = 0;
+    std::vector<VkPipeline> graphicsPipelines;
 
+    std::vector<Pipeline> pipelineObjects;
+
+    bool initialized = false;
+    bool shouldRecord = false;
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;
 
