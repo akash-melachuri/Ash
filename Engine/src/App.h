@@ -2,8 +2,6 @@
 
 #include <memory>
 
-#include "Core.h"
-#include "VulkanAPI.h"
 #include "Window.h"
 
 namespace Ash {
@@ -24,7 +22,6 @@ class App {
     void run();
 
     std::shared_ptr<Window> window;
-    std::unique_ptr<VulkanAPI> api;  // TODO: Move to Renderer
 
     static App* instance;
 };

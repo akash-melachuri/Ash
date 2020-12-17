@@ -855,7 +855,7 @@ void VulkanAPI::init() {
     createSyncObjects();
 }
 
-void VulkanAPI::draw() {
+void VulkanAPI::render() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE,
                     UINT64_MAX);
     uint32_t imageIndex;

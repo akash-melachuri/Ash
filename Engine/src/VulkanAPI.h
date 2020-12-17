@@ -19,7 +19,7 @@ class VulkanAPI {
     ~VulkanAPI();
 
     void init();
-    void draw();
+    void render();
     void cleanup();
 
     void setClearColor(const glm::vec4& color);

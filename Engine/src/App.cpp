@@ -1,32 +1,31 @@
 #include "App.h"
 
+#include "Renderer.h"
+
 namespace Ash {
 
 App* App::instance = nullptr;
 
-App::App() {
-    instance = this;
+App::App() { instance = this; }
+
+App::~App() {}
+
+void App::start() {
+    auto app = new App();
+
+    // Startup systems
+    Log::init();
+    Window::init();
 
     // Initialize window
-    window = Window::create({
+    instance->window = Window::create({
         "Ash",
         800,
         600,
     });
 
-    // Initialize graphics API
-    api = std::make_unique<VulkanAPI>();
-    api->init();
-}
+    Renderer::init();
 
-App::~App() {}
-
-void App::start() {
-    // Startup systems
-    Log::init();
-    Window::init();
-
-    auto app = new App();
     app->run();
 }
 
@@ -34,7 +33,7 @@ void App::cleanup() {
     ASH_INFO("Cleaning up resources...");
 
     // Shtudown systems
-    instance->api->cleanup();
+    Renderer::cleanup();
     instance->window->destroy();
     Window::cleanup();
 
@@ -45,7 +44,7 @@ void App::run() {
     APP_INFO("Running!");
 
     while (!window->shouldClose()) {
-        api->draw();
+        Renderer::render();
 
         window->swapBuffers();
         window->pollEvents();

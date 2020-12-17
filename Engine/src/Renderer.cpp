@@ -2,7 +2,11 @@
 
 namespace Ash {
 
-void Renderer::init() { api = std::make_unique<VulkanAPI>(); }
+std::unique_ptr<VulkanAPI> Renderer::api = std::make_unique<VulkanAPI>();
+
+void Renderer::init() { api->init(); }
+
+void Renderer::render() { api->render(); }
 
 void Renderer::cleanup() { api->cleanup(); }
 

@@ -11,6 +11,7 @@ class Renderer {
     ~Renderer();
 
     static void init();
+    static void render();
     static void cleanup();
 
     static void setClearColor(const glm::vec4& clearColor);
