@@ -28,6 +28,13 @@ void App::start() {
 
     Renderer::init();
 
+#ifdef ASH_LINUX
+    ASH_INFO("Detected Linux Operating System");
+#endif
+#ifdef ASH_WINDOWS
+    ASH_INFO("Detected Windows Operating System");
+#endif
+
     app->run();
 }
 

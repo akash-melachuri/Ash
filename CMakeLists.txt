@@ -56,6 +56,14 @@ target_compile_options(ash PRIVATE
   $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic>
 )
 
+if (UNIX AND NOT APPLE)
+    add_compile_definitions(ASH_LINUX)
+endif()
+
+if (WIN32)
+    add_compile_definitions(ASH_WINDOWS)
+endif()
+
 target_link_libraries(ash glfw)
 target_link_libraries(ash Vulkan::Vulkan)
 target_link_libraries(ash glm::glm)

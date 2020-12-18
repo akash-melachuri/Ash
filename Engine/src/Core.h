@@ -7,8 +7,6 @@
 #define ASH_DEBUG
 #endif
 
-#define ASH_LINUX
-
 #ifdef ASH_LINUX
 #define ASH_ABORT std::abort()
 #elif ASH_WINDOWS

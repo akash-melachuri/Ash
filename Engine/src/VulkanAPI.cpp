@@ -2,7 +2,6 @@
 
 #include "App.h"
 #include "Helper.h"
-#include "Shader.h"
 
 namespace Ash {
 
