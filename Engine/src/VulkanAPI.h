@@ -51,6 +51,7 @@ class VulkanAPI {
     void createSwapchain();
     void createImageViews();
     void createRenderPass();
+    void createPipelineCache();
     void createGraphicsPipelines(const std::vector<Pipeline>& pipelines);
     void createFramebuffers();
     void createCommandPool();
@@ -97,9 +98,9 @@ class VulkanAPI {
     VkRenderPass renderPass;
     VkPipelineLayout pipelineLayout;
 
+    VkPipelineCache pipelineCache;
     size_t currentPipeline = 0;
     std::vector<VkPipeline> graphicsPipelines;
-
     std::vector<Pipeline> pipelineObjects;
 
     bool initialized = false;

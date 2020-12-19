@@ -497,6 +497,15 @@ void VulkanAPI::createRenderPass() {
                "Failed to create render pass");
 }
 
+void VulkanAPI::createPipelineCache() {
+    VkPipelineCacheCreateInfo cacheInfo{};
+    cacheInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+
+    ASH_ASSERT(vkCreatePipelineCache(device, &cacheInfo, nullptr,
+                                     &pipelineCache) == VK_SUCCESS,
+               "Failed to create pipeline cache");
+}
+
 void VulkanAPI::createGraphicsPipelines(
     const std::vector<Pipeline>& pipelines) {
     pipelineObjects = pipelines;
@@ -646,7 +655,7 @@ void VulkanAPI::createGraphicsPipelines(
     pipelineInfo.subpass = 0;
 
     ASH_ASSERT(
-        vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo,
+        vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo,
                                   nullptr, &graphicsPipelines[0]) == VK_SUCCESS,
         "Failed to create graphics pipeline");
 
@@ -686,7 +695,7 @@ void VulkanAPI::createGraphicsPipelines(
         pipelineInfo.pStages = shaderStageInfos.data();
 
         ASH_ASSERT(vkCreateGraphicsPipelines(
-                       device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
+                       device, pipelineCache, 1, &pipelineInfo, nullptr,
                        &graphicsPipelines[j + 1]) == VK_SUCCESS,
                    "Failed to create user pipeline");
 
@@ -894,6 +903,7 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createSwapchain();
     createImageViews();
     createRenderPass();
+    createPipelineCache();
     createGraphicsPipelines(pipelines);
     createFramebuffers();
     createCommandPool();
@@ -978,6 +988,8 @@ void VulkanAPI::cleanup() {
     vkDeviceWaitIdle(device);
 
     ASH_INFO("Cleaning up graphics API");
+
+    vkDestroyPipelineCache(device, pipelineCache, nullptr);
 
     cleanupSwapchain();
 

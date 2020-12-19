@@ -8,6 +8,7 @@
 #include "VulkanAPI.h"
 
 namespace Ash {
+
 class Renderer {
    public:
     Renderer();
@@ -28,4 +29,5 @@ class Renderer {
     static std::shared_ptr<VulkanAPI> api;
     static std::vector<Pipeline> pipelines;
 };
+
 }  // namespace Ash
