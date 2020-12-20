@@ -510,8 +510,6 @@ void VulkanAPI::createGraphicsPipelines(
     const std::vector<Pipeline>& pipelines) {
     pipelineObjects = pipelines;
 
-    graphicsPipelines.resize(pipelines.size() + 1);
-
     std::vector<char> vert =
         Helper::readBinaryFile("assets/shaders/shader.vert.spv");
     std::vector<char> frag =
@@ -654,13 +652,13 @@ void VulkanAPI::createGraphicsPipelines(
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
 
-    ASH_ASSERT(
-        vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo,
-                                  nullptr, &graphicsPipelines[0]) == VK_SUCCESS,
-        "Failed to create graphics pipeline");
+    ASH_ASSERT(vkCreateGraphicsPipelines(
+                   device, pipelineCache, 1, &pipelineInfo, nullptr,
+                   &graphicsPipelines["main"]) == VK_SUCCESS,
+               "Failed to create graphics pipeline");
 
     pipelineInfo.flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
-    pipelineInfo.basePipelineHandle = graphicsPipelines[0];
+    pipelineInfo.basePipelineHandle = graphicsPipelines["main"];
     pipelineInfo.basePipelineIndex = -1;
 
     size_t j = 0;
@@ -696,7 +694,7 @@ void VulkanAPI::createGraphicsPipelines(
 
         ASH_ASSERT(vkCreateGraphicsPipelines(
                        device, pipelineCache, 1, &pipelineInfo, nullptr,
-                       &graphicsPipelines[j + 1]) == VK_SUCCESS,
+                       &graphicsPipelines[pipeline.name]) == VK_SUCCESS,
                    "Failed to create user pipeline");
 
         for (auto& module : shaderModules)
@@ -836,9 +834,8 @@ void VulkanAPI::cleanupSwapchain() {
                          commandBuffers.data());
 
     for (auto pipeline : graphicsPipelines)
-        vkDestroyPipeline(device, pipeline, nullptr);
+        vkDestroyPipeline(device, pipeline.second, nullptr);
 
-    // vkDestroyPipeline(device, graphicsPipeline[i], nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
     vkDestroyRenderPass(device, renderPass, nullptr);
 
@@ -1016,8 +1013,8 @@ void VulkanAPI::updateCommandBuffers() {
     recordCommandBuffers();
 }
 
-void VulkanAPI::setPipeline(size_t i) {
-    currentPipeline = i;
+void VulkanAPI::setPipeline(std::string name) {
+    currentPipeline = name;
 
     shouldRecord = true;
 }

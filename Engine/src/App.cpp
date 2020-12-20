@@ -65,7 +65,11 @@ void App::run() {
 
         // Temporary
         if (time.count() > 0.5) {
-            Renderer::setPipeline(static_cast<size_t>(pipeline));
+            if (pipeline) {
+                Renderer::setPipeline("main");
+            } else {
+                Renderer::setPipeline("Phong");
+            }
             t1 = std::chrono::high_resolution_clock::now();
             pipeline = !pipeline;
         }

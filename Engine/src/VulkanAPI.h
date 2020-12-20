@@ -7,6 +7,8 @@
 #include <glm/glm.hpp>
 
 #include <optional>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "Core.h"
@@ -24,7 +26,7 @@ class VulkanAPI {
     void cleanup();
 
     void setClearColor(const glm::vec4& color);
-    void setPipeline(size_t i);
+    void setPipeline(std::string name);
 
    private:
     struct QueueFamilyIndices {
@@ -99,8 +101,8 @@ class VulkanAPI {
     VkPipelineLayout pipelineLayout;
 
     VkPipelineCache pipelineCache;
-    size_t currentPipeline = 0;
-    std::vector<VkPipeline> graphicsPipelines;
+    std::string currentPipeline = "main";
+    std::unordered_map<std::string, VkPipeline> graphicsPipelines;
     std::vector<Pipeline> pipelineObjects;
 
     bool initialized = false;

@@ -15,7 +15,7 @@ class Renderer {
     ~Renderer();
 
     static void loadPipeline(const Pipeline& pipeline);
-    static void setPipeline(size_t i);
+    static void setPipeline(std::string name);
 
     static void init();
     static void render();

@@ -9,7 +9,7 @@ void Renderer::loadPipeline(const Pipeline& pipeline) {
     pipelines.push_back(pipeline);
 }
 
-void Renderer::setPipeline(size_t i) { api->setPipeline(i); }
+void Renderer::setPipeline(std::string name) { api->setPipeline(name); }
 
 void Renderer::init() { api->init(pipelines); }
 
