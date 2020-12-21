@@ -12,8 +12,8 @@ App::App() { instance = this; }
 
 App::~App() {}
 
-void App::start() {
-    auto app = new App();
+void App::init() {
+    new App();
 
     // Startup systems
     Log::init();
@@ -34,9 +34,9 @@ void App::start() {
 #ifdef ASH_WINDOWS
     ASH_INFO("Detected Windows Operating System");
 #endif
-
-    app->run();
 }
+
+void App::start() { instance->run(); }
 
 void App::cleanup() {
     ASH_INFO("Cleaning up resources...");
@@ -46,33 +46,23 @@ void App::cleanup() {
     instance->window->destroy();
     Window::cleanup();
 
+    for (auto layer : instance->layers) delete layer;
+
     delete instance;
+}
+
+void App::addLayer(Layer* layer) {
+    layer->init();
+    instance->layers.push_back(layer);
 }
 
 void App::run() {
     APP_INFO("Running!");
 
-    // Temporary
-    auto t1 = std::chrono::high_resolution_clock::now();
-    bool pipeline = true;
-
     while (!window->shouldClose()) {
+        for (auto layer : layers) layer->onUpdate();
+
         Renderer::render();
-
-        // Temporary
-        auto t2 = std::chrono::high_resolution_clock::now();
-        auto time = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1);
-
-        // Temporary
-        if (time.count() > 0.5) {
-            if (pipeline) {
-                Renderer::setPipeline("main");
-            } else {
-                Renderer::setPipeline("Phong");
-            }
-            t1 = std::chrono::high_resolution_clock::now();
-            pipeline = !pipeline;
-        }
 
         window->swapBuffers();
         window->pollEvents();

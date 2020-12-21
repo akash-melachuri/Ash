@@ -105,7 +105,6 @@ class VulkanAPI {
     std::unordered_map<std::string, VkPipeline> graphicsPipelines;
     std::vector<Pipeline> pipelineObjects;
 
-    bool initialized = false;
     bool shouldRecord = false;
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;

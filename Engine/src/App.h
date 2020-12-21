@@ -1,7 +1,9 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
+#include "Layer.h"
 #include "Window.h"
 
 namespace Ash {
@@ -11,17 +13,22 @@ class App {
     App();
     ~App();
 
+    static void init();
     static void start();
     static void cleanup();
+    static void addLayer(Layer* layer);
 
     inline static App* get() { return instance; }
 
-    inline std::shared_ptr<Window> getWindow() const { return window; }
+    inline static std::shared_ptr<Window> getWindow() {
+        return instance->window;
+    }
 
    private:
     void run();
 
     std::shared_ptr<Window> window;
+    std::vector<Layer*> layers;
 
     static App* instance;
 };

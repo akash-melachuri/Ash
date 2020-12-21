@@ -1,13 +1,23 @@
 #include <Ash.h>
 
+#include "GameLayer.h"
+
 using namespace Ash;
 
 int main() {
+    // Load resources
     Renderer::loadPipeline(Pipeline("assets/shaders/phong.vert.spv",
                                     "assets/shaders/phong.frag.spv", "Phong"));
-    Renderer::setClearColor({0.0f, 1.0f, 0.0f, 1.0f});
-    Renderer::setPipeline("Phong");
+
+    // Initialize application
+    App::init();
+
+    // Add user layers
+    App::addLayer(new GameLayer());
+
+    // Start
     App::start();
-    // Game code goes here
+
+    // Cleanup
     App::cleanup();
 }

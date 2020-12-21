@@ -155,7 +155,7 @@ VkExtent2D VulkanAPI::chooseSwapExtent(
         return capabilities.currentExtent;
     } else {
         int width, height;
-        glfwGetFramebufferSize(App::get()->getWindow()->get(), &width, &height);
+        glfwGetFramebufferSize(App::getWindow()->get(), &width, &height);
 
         VkExtent2D actualExtent = {static_cast<uint32_t>(width),
                                    static_cast<uint32_t>(height)};
@@ -847,9 +847,9 @@ void VulkanAPI::cleanupSwapchain() {
 
 void VulkanAPI::recreateSwapchain() {
     int width = 0, height = 0;
-    glfwGetFramebufferSize(App::get()->getWindow()->get(), &width, &height);
+    glfwGetFramebufferSize(App::getWindow()->get(), &width, &height);
     while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(App::get()->getWindow()->get(), &width, &height);
+        glfwGetFramebufferSize(App::getWindow()->get(), &width, &height);
         glfwWaitEvents();
     }
 
@@ -882,7 +882,7 @@ VkShaderModule VulkanAPI::createShaderModule(const std::vector<char>& code) {
 }
 
 void VulkanAPI::createSurface() {
-    GLFWwindow* window = Ash::App::get()->getWindow()->get();
+    GLFWwindow* window = Ash::App::getWindow()->get();
     VkResult result =
         glfwCreateWindowSurface(instance, window, nullptr, &surface);
     ASH_ASSERT(result == VK_SUCCESS, "Failed to create window surface, {}",
@@ -906,8 +906,6 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createCommandPool();
     createCommandBuffers();
     createSyncObjects();
-
-    initialized = true;
 }
 
 void VulkanAPI::render() {
@@ -971,8 +969,8 @@ void VulkanAPI::render() {
     result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
-        App::get()->getWindow()->framebufferResized) {
-        App::get()->getWindow()->framebufferResized = false;
+        App::getWindow()->framebufferResized) {
+        App::getWindow()->framebufferResized = false;
         recreateSwapchain();
     } else {
         ASH_ASSERT(result == VK_SUCCESS, "Failed to present swapchain image");
