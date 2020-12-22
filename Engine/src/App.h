@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "Layer.h"
+#include "System.h"
 #include "Window.h"
 
 namespace Ash {
@@ -16,7 +16,7 @@ class App {
     static void init();
     static void start();
     static void cleanup();
-    static void addLayer(Layer* layer);
+    static void addSystem(System* system);
 
     inline static App* get() { return instance; }
 
@@ -28,7 +28,7 @@ class App {
     void run();
 
     std::shared_ptr<Window> window;
-    std::vector<Layer*> layers;
+    std::vector<System*> systems;
 
     static App* instance;
 };

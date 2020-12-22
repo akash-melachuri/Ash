@@ -46,21 +46,21 @@ void App::cleanup() {
     instance->window->destroy();
     Window::cleanup();
 
-    for (auto layer : instance->layers) delete layer;
+    for (auto system : instance->systems) delete system;
 
     delete instance;
 }
 
-void App::addLayer(Layer* layer) {
-    layer->init();
-    instance->layers.push_back(layer);
+void App::addSystem(System* system) {
+    system->init();
+    instance->systems.push_back(system);
 }
 
 void App::run() {
     APP_INFO("Running!");
 
     while (!window->shouldClose()) {
-        for (auto layer : layers) layer->onUpdate();
+        for (auto system : systems) system->onUpdate();
 
         Renderer::render();
 

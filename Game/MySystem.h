@@ -4,10 +4,10 @@
 
 using namespace Ash;
 
-class GameLayer : public Layer {
+class MySystem : public System {
    public:
-    GameLayer();
-    virtual ~GameLayer();
+    MySystem();
+    virtual ~MySystem();
     virtual void init();
     virtual void onUpdate();
 };

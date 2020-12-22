@@ -1,6 +1,6 @@
 #include <Ash.h>
 
-#include "GameLayer.h"
+#include "MySystem.h"
 
 using namespace Ash;
 
@@ -13,7 +13,7 @@ int main() {
     App::init();
 
     // Add user layers
-    App::addLayer(new GameLayer());
+    App::addSystem(new MySystem());
 
     // Start
     App::start();

@@ -1,16 +1,16 @@
-#include "GameLayer.h"
+#include "MySystem.h"
 
 #include <chrono>
 
-GameLayer::GameLayer() {}
-GameLayer::~GameLayer() {}
+MySystem::MySystem() {}
+MySystem::~MySystem() {}
 
-void GameLayer::init() {
+void MySystem::init() {
     Renderer::setClearColor({0.0f, 1.0f, 0.0f, 1.0f});
     Renderer::setPipeline("Phong");
 }
 
-void GameLayer::onUpdate() {
+void MySystem::onUpdate() {
     static auto t1 = std::chrono::high_resolution_clock::now();
     static bool pipeline = true;
 
