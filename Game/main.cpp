@@ -6,8 +6,9 @@ using namespace Ash;
 
 int main() {
     // Load resources
-    Renderer::loadPipeline(Pipeline("assets/shaders/phong.vert.spv",
-                                    "assets/shaders/phong.frag.spv", "Phong"));
+    // Renderer::loadPipeline(Pipeline("assets/shaders/phong.vert.spv",
+    //                                 "assets/shaders/phong.frag.spv",
+    //                                 "Phong"));
 
     // Initialize application
     App::init();
