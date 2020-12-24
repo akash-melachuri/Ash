@@ -62,7 +62,7 @@ class VulkanAPI {
         }
     };
 
-    const std::vector<Vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    const std::vector<Vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
                                           {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
                                           {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
 
@@ -95,6 +95,7 @@ class VulkanAPI {
     void createGraphicsPipelines(const std::vector<Pipeline>& pipelines);
     void createFramebuffers();
     void createCommandPool();
+    void createVertexBuffer();
     void createCommandBuffers();
     void recordCommandBuffers();
     void createSyncObjects();
@@ -114,6 +115,9 @@ class VulkanAPI {
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
     VkShaderModule createShaderModule(const std::vector<char>& code);
+
+    uint32_t findMemoryType(uint32_t typeFilter,
+                            VkMemoryPropertyFlags properties);
 
     VkInstance instance;
 
@@ -151,6 +155,9 @@ class VulkanAPI {
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
+
+    VkBuffer vertexBuffer;
+    VkDeviceMemory vertexBufferMemory;
 
     size_t currentFrame = 0;
 
