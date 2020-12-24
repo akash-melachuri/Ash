@@ -1073,6 +1073,12 @@ void VulkanAPI::updateCommandBuffers() {
     recordCommandBuffers();
 }
 
+/*
+ *
+ *      Renderer API
+ *
+ */
+
 void VulkanAPI::setPipeline(std::string name) {
     currentPipeline = name;
 
@@ -1084,6 +1090,12 @@ void VulkanAPI::setClearColor(const glm::vec4& color) {
 
     shouldRecord = true;
 }
+
+/*
+ *
+ *      Renderer API
+ *
+ */
 
 bool VulkanAPI::checkValidationSupport() {
     uint32_t layerCount;
