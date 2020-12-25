@@ -17,6 +17,10 @@ void Renderer::render() { api->render(); }
 
 void Renderer::cleanup() { api->cleanup(); }
 
+void Renderer::drawVertices(std::vector<Vertex> verts) {
+    api->submitVertexArray(verts);
+}
+
 void Renderer::setClearColor(const glm::vec4& clearColor) {
     api->setClearColor(clearColor);
 }

@@ -60,12 +60,7 @@ class VulkanAPI {
 
     void setClearColor(const glm::vec4& color);
     void setPipeline(std::string name);
-
-    void submitVertexArray(std::vector<Vertex>);
-
-    const std::vector<Vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-                                          {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-                                          {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+    void submitVertexArray(std::vector<Vertex> verts);
 
    private:
     struct QueueFamilyIndices {
@@ -96,7 +91,6 @@ class VulkanAPI {
     void createGraphicsPipelines(const std::vector<Pipeline>& pipelines);
     void createFramebuffers();
     void createCommandPool();
-    void createVertexBuffer();
     void createCommandBuffers();
     void recordCommandBuffers();
     void createSyncObjects();
@@ -148,6 +142,9 @@ class VulkanAPI {
     std::unordered_map<std::string, VkPipeline> graphicsPipelines;
     std::vector<Pipeline> pipelineObjects;
 
+    // When true, means command buffers need to be re-recorded because they are
+    // outdated Usually means new object/change in rendering properties e.g.
+    // changing clear color or shaders
     bool shouldRecord = false;
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;
@@ -157,8 +154,10 @@ class VulkanAPI {
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
 
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
+    std::vector<uint32_t> numVerts;
+    std::vector<VkBuffer> vertexBuffers;
+    // Rename to vertexBufferMemory
+    std::vector<VkDeviceMemory> vbMemory;
 
     size_t currentFrame = 0;
 

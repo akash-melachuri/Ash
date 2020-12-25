@@ -760,40 +760,6 @@ uint32_t VulkanAPI::findMemoryType(uint32_t typeFilter,
     ASH_ASSERT(false, "Failed to find suitable memory type");
 }
 
-void VulkanAPI::createVertexBuffer() {
-    VkBufferCreateInfo bufferInfo{};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = sizeof(vertices[0]) * vertices.size();
-    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    ASH_ASSERT(vkCreateBuffer(device, &bufferInfo, nullptr, &vertexBuffer) ==
-                   VK_SUCCESS,
-               "Failed to create vertex buffer");
-
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(device, vertexBuffer, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex =
-        findMemoryType(memRequirements.memoryTypeBits,
-                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    ASH_ASSERT(vkAllocateMemory(device, &allocInfo, nullptr,
-                                &vertexBufferMemory) == VK_SUCCESS,
-               "Failed to allocate vertex buffer memory");
-
-    vkBindBufferMemory(device, vertexBuffer, vertexBufferMemory, 0);
-
-    void* data;
-    vkMapMemory(device, vertexBufferMemory, 0, bufferInfo.size, 0, &data);
-    std::memcpy(data, vertices.data(), static_cast<size_t>(bufferInfo.size));
-    vkUnmapMemory(device, vertexBufferMemory);
-}
-
 void VulkanAPI::createCommandBuffers() {
     commandBuffers.resize(swapchainFramebuffers.size());
 
@@ -839,12 +805,15 @@ void VulkanAPI::recordCommandBuffers() {
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
                           graphicsPipelines[currentPipeline]);
 
-        VkBuffer vertexBuffers[] = {vertexBuffer};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+        for (size_t j = 0; j < vertexBuffers.size(); j++) {
+            VkBuffer vbs[] = {vertexBuffers[j]};
+            VkDeviceSize offsets[] = {0};
 
-        vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(vertices.size()), 1,
-                  0, 0);
+            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vbs, offsets);
+
+            vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(numVerts[j]), 1,
+                      0, 0);
+        }
 
         vkCmdEndRenderPass(commandBuffers[i]);
 
@@ -962,7 +931,6 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createGraphicsPipelines(pipelines);
     createFramebuffers();
     createCommandPool();
-    createVertexBuffer();
     createCommandBuffers();
     createSyncObjects();
 }
@@ -1047,8 +1015,9 @@ void VulkanAPI::cleanup() {
 
     cleanupSwapchain();
 
-    vkDestroyBuffer(device, vertexBuffer, nullptr);
-    vkFreeMemory(device, vertexBufferMemory, nullptr);
+    for (auto buffer : vertexBuffers) vkDestroyBuffer(device, buffer, nullptr);
+
+    for (auto memory : vbMemory) vkFreeMemory(device, memory, nullptr);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
@@ -1087,6 +1056,51 @@ void VulkanAPI::setPipeline(std::string name) {
 
 void VulkanAPI::setClearColor(const glm::vec4& color) {
     clearColor = color;
+
+    shouldRecord = true;
+}
+
+void VulkanAPI::submitVertexArray(std::vector<Vertex> verts) {
+    vertexBuffers.resize(vertexBuffers.size() + 1);
+    vbMemory.resize(vbMemory.size() + 1);
+
+    numVerts.push_back(verts.size());
+
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = sizeof(verts[0]) * verts.size();
+    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    ASH_ASSERT(
+        vkCreateBuffer(device, &bufferInfo, nullptr,
+                       &vertexBuffers[vertexBuffers.size() - 1]) == VK_SUCCESS,
+        "Failed to create vertex buffer");
+
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(
+        device, vertexBuffers[vertexBuffers.size() - 1], &memRequirements);
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex =
+        findMemoryType(memRequirements.memoryTypeBits,
+                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    ASH_ASSERT(vkAllocateMemory(device, &allocInfo, nullptr,
+                                &vbMemory[vbMemory.size() - 1]) == VK_SUCCESS,
+               "Failed to allocate vertex buffer memory");
+
+    vkBindBufferMemory(device, vertexBuffers[vertexBuffers.size() - 1],
+                       vbMemory[vbMemory.size() - 1], 0);
+
+    void* data;
+    vkMapMemory(device, vbMemory[vbMemory.size() - 1], 0, bufferInfo.size, 0,
+                &data);
+    std::memcpy(data, verts.data(), static_cast<size_t>(bufferInfo.size));
+    vkUnmapMemory(device, vbMemory[vbMemory.size() - 1]);
 
     shouldRecord = true;
 }
