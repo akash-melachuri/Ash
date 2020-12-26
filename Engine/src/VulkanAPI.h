@@ -97,6 +97,9 @@ class VulkanAPI {
     void cleanupSwapchain();
     void recreateSwapchain();
     void updateCommandBuffers();
+    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+                      VkMemoryPropertyFlags properties, VkBuffer& buffer,
+                      VkDeviceMemory& bufferMemory);
 
     SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(

@@ -894,6 +894,35 @@ void VulkanAPI::recreateSwapchain() {
     createCommandBuffers();
 }
 
+void VulkanAPI::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+                             VkMemoryPropertyFlags properties, VkBuffer& buffer,
+                             VkDeviceMemory& bufferMemory) {
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = size;
+    bufferInfo.usage = usage;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    ASH_ASSERT(
+        vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) == VK_SUCCESS,
+        "Failed to create buffer");
+
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex =
+        findMemoryType(memRequirements.memoryTypeBits, properties);
+
+    ASH_ASSERT(vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) ==
+                   VK_SUCCESS,
+               "Failed to allocate buffer memory from device");
+
+    vkBindBufferMemory(device, buffer, bufferMemory, 0);
+}
+
 VkShaderModule VulkanAPI::createShaderModule(const std::vector<char>& code) {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1063,43 +1092,18 @@ void VulkanAPI::setClearColor(const glm::vec4& color) {
 void VulkanAPI::submitVertexArray(std::vector<Vertex> verts) {
     vertexBuffers.resize(vertexBuffers.size() + 1);
     vbMemory.resize(vbMemory.size() + 1);
-
     numVerts.push_back(verts.size());
 
-    VkBufferCreateInfo bufferInfo{};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = sizeof(verts[0]) * verts.size();
-    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    ASH_ASSERT(
-        vkCreateBuffer(device, &bufferInfo, nullptr,
-                       &vertexBuffers[vertexBuffers.size() - 1]) == VK_SUCCESS,
-        "Failed to create vertex buffer");
-
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(
-        device, vertexBuffers[vertexBuffers.size() - 1], &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex =
-        findMemoryType(memRequirements.memoryTypeBits,
-                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    ASH_ASSERT(vkAllocateMemory(device, &allocInfo, nullptr,
-                                &vbMemory[vbMemory.size() - 1]) == VK_SUCCESS,
-               "Failed to allocate vertex buffer memory");
-
-    vkBindBufferMemory(device, vertexBuffers[vertexBuffers.size() - 1],
-                       vbMemory[vbMemory.size() - 1], 0);
+    VkDeviceSize bufferSize = sizeof(verts[0]) * verts.size();
+    createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                 vertexBuffers[vertexBuffers.size() - 1],
+                 vbMemory[vbMemory.size() - 1]);
 
     void* data;
-    vkMapMemory(device, vbMemory[vbMemory.size() - 1], 0, bufferInfo.size, 0,
-                &data);
-    std::memcpy(data, verts.data(), static_cast<size_t>(bufferInfo.size));
+    vkMapMemory(device, vbMemory[vbMemory.size() - 1], 0, bufferSize, 0, &data);
+    std::memcpy(data, verts.data(), static_cast<size_t>(bufferSize));
     vkUnmapMemory(device, vbMemory[vbMemory.size() - 1]);
 
     shouldRecord = true;
