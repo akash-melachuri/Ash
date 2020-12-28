@@ -732,7 +732,7 @@ void VulkanAPI::createFramebuffers() {
     }
 }
 
-void VulkanAPI::createCommandPool() {
+void VulkanAPI::createCommandPools() {
     QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
 
     VkCommandPoolCreateInfo poolInfo{};
@@ -742,6 +742,12 @@ void VulkanAPI::createCommandPool() {
 
     ASH_ASSERT(vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) ==
                    VK_SUCCESS,
+               "Failed to create command pool");
+
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+
+    ASH_ASSERT(vkCreateCommandPool(device, &poolInfo, nullptr,
+                                   &transferCommandPool) == VK_SUCCESS,
                "Failed to create command pool");
 }
 
@@ -851,6 +857,10 @@ void VulkanAPI::createSyncObjects() {
                                  &inFlightFences[i]) == VK_SUCCESS,
                    "Failed to create fence");
     }
+
+    ASH_ASSERT(vkCreateFence(device, &fenceInfo, nullptr, &copyFinishedFence) ==
+                   VK_SUCCESS,
+               "Failed to create fence");
 }
 
 void VulkanAPI::cleanupSwapchain() {
@@ -926,12 +936,10 @@ void VulkanAPI::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
 
 void VulkanAPI::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer,
                            VkDeviceSize size) {
-    // TODO Consider creating separate command pool with
-    // VK_COMMAND_POOL_CREATE_TRANSIENT_BIT
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = commandPool;
+    allocInfo.commandPool = transferCommandPool;
     allocInfo.commandBufferCount = 1;
 
     VkCommandBuffer commandBuffer;
@@ -954,11 +962,16 @@ void VulkanAPI::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer,
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    // TODO create fence in order to wait on instead of the entire queue
-    vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(graphicsQueue);
+    ASH_ASSERT(vkResetFences(device, 1, &copyFinishedFence) == VK_SUCCESS,
+               "Failed to reset copy finished fence");
 
-    vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+    ASH_ASSERT(vkQueueSubmit(graphicsQueue, 1, &submitInfo,
+                             copyFinishedFence) == VK_SUCCESS,
+               "Failed to submit copy command buffer");
+
+    vkWaitForFences(device, 1, &copyFinishedFence, VK_TRUE, UINT64_MAX);
+
+    vkFreeCommandBuffers(device, transferCommandPool, 1, &commandBuffer);
 }
 
 VkShaderModule VulkanAPI::createShaderModule(const std::vector<char>& code) {
@@ -997,7 +1010,7 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createPipelineCache();
     createGraphicsPipelines(pipelines);
     createFramebuffers();
-    createCommandPool();
+    createCommandPools();
     createCommandBuffers();
     createSyncObjects();
 }
@@ -1092,7 +1105,10 @@ void VulkanAPI::cleanup() {
         vkDestroyFence(device, inFlightFences[i], nullptr);
     }
 
+    vkDestroyFence(device, copyFinishedFence, nullptr);
+
     vkDestroyCommandPool(device, commandPool, nullptr);
+    vkDestroyCommandPool(device, transferCommandPool, nullptr);
 
     vkDestroyDevice(device, nullptr);
 

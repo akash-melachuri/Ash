@@ -90,7 +90,7 @@ class VulkanAPI {
     void createPipelineCache();
     void createGraphicsPipelines(const std::vector<Pipeline>& pipelines);
     void createFramebuffers();
-    void createCommandPool();
+    void createCommandPools();
     void createCommandBuffers();
     void recordCommandBuffers();
     void createSyncObjects();
@@ -151,12 +151,14 @@ class VulkanAPI {
     // changing clear color or shaders
     bool shouldRecord = false;
     VkCommandPool commandPool;
+    VkCommandPool transferCommandPool;
     std::vector<VkCommandBuffer> commandBuffers;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
+    VkFence copyFinishedFence;
 
     std::vector<uint32_t> numVerts;
     std::vector<VkBuffer> vertexBuffers;
