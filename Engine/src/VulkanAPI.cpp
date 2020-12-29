@@ -372,6 +372,17 @@ void VulkanAPI::createLogicalDevice() {
     vkGetDeviceQueue(device, indices.presentsFamily.value(), 0, &presentQueue);
 }
 
+void VulkanAPI::createAllocator() {
+    VmaAllocatorCreateInfo allocInfo{};
+    allocInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+    allocInfo.device = device;
+    allocInfo.physicalDevice = physicalDevice;
+    allocInfo.instance = instance;
+
+    ASH_ASSERT(vmaCreateAllocator(&allocInfo, &allocator) == VK_SUCCESS,
+               "Failed to create allocator");
+}
+
 void VulkanAPI::createSwapchain() {
     ASH_INFO("Creating swapchain");
     SwapchainSupportDetails swapchainSupport =
@@ -905,33 +916,21 @@ void VulkanAPI::recreateSwapchain() {
     createCommandBuffers();
 }
 
-void VulkanAPI::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                             VkMemoryPropertyFlags properties, VkBuffer& buffer,
-                             VkDeviceMemory& bufferMemory) {
+void VulkanAPI::createBuffer(VkDeviceSize size, VmaMemoryUsage memUsage,
+                             VkBufferUsageFlags usage, VkBuffer& buffer,
+                             VmaAllocation& allocation) {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
     bufferInfo.usage = usage;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    ASH_ASSERT(
-        vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) == VK_SUCCESS,
-        "Failed to create buffer");
+    VmaAllocationCreateInfo allocationInfo{};
+    allocationInfo.usage = memUsage;
 
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex =
-        findMemoryType(memRequirements.memoryTypeBits, properties);
-
-    ASH_ASSERT(vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) ==
-                   VK_SUCCESS,
-               "Failed to allocate buffer memory from device");
-
-    vkBindBufferMemory(device, buffer, bufferMemory, 0);
+    ASH_ASSERT(vmaCreateBuffer(allocator, &bufferInfo, &allocationInfo, &buffer,
+                               &allocation, nullptr) == VK_SUCCESS,
+               "Failed to create buffer and allocation");
 }
 
 void VulkanAPI::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer,
@@ -1004,6 +1003,7 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+    createAllocator();
     createSwapchain();
     createImageViews();
     createRenderPass();
@@ -1095,9 +1095,11 @@ void VulkanAPI::cleanup() {
 
     cleanupSwapchain();
 
-    for (auto buffer : vertexBuffers) vkDestroyBuffer(device, buffer, nullptr);
+    for (size_t i = 0; i < vertexBuffers.size(); i++)
+        vmaDestroyBuffer(allocator, vertexBuffers[i],
+                         vertexBufferAllocations[i]);
 
-    for (auto memory : vbMemory) vkFreeMemory(device, memory, nullptr);
+    vmaDestroyAllocator(allocator);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
@@ -1145,34 +1147,32 @@ void VulkanAPI::setClearColor(const glm::vec4& color) {
 
 void VulkanAPI::submitVertexArray(std::vector<Vertex> verts) {
     vertexBuffers.resize(vertexBuffers.size() + 1);
-    vbMemory.resize(vbMemory.size() + 1);
+    vertexBufferAllocations.resize(vertexBufferAllocations.size() + 1);
     numVerts.push_back(verts.size());
 
     VkDeviceSize bufferSize = sizeof(verts[0]) * verts.size();
 
     VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                 stagingBuffer, stagingBufferMemory);
+    VmaAllocation stagingBufferAllocation;
+    createBuffer(bufferSize, VMA_MEMORY_USAGE_CPU_ONLY,
+                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBuffer,
+                 stagingBufferAllocation);
 
     void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    vmaMapMemory(allocator, stagingBufferAllocation, &data);
     std::memcpy(data, verts.data(), static_cast<size_t>(bufferSize));
-    vkUnmapMemory(device, stagingBufferMemory);
+    vmaUnmapMemory(allocator, stagingBufferAllocation);
 
     createBuffer(
-        bufferSize,
+        bufferSize, VMA_MEMORY_USAGE_GPU_ONLY,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        vertexBuffers[vertexBuffers.size() - 1], vbMemory[vbMemory.size() - 1]);
+        vertexBuffers[vertexBuffers.size() - 1],
+        vertexBufferAllocations[vertexBufferAllocations.size() - 1]);
 
     copyBuffer(stagingBuffer, vertexBuffers[vertexBuffers.size() - 1],
                bufferSize);
 
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
+    vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
 
     shouldRecord = true;
 }

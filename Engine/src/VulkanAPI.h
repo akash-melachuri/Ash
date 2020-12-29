@@ -1,6 +1,7 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
+#include <vk_mem_alloc.h>
+#include <vulkan/vulkan.h>
 
 #include <GLFW/glfw3.h>
 
@@ -84,6 +85,7 @@ class VulkanAPI {
     void createSurface();
     void pickPhysicalDevice();
     void createLogicalDevice();
+    void createAllocator();
     void createSwapchain();
     void createImageViews();
     void createRenderPass();
@@ -97,9 +99,9 @@ class VulkanAPI {
     void cleanupSwapchain();
     void recreateSwapchain();
     void updateCommandBuffers();
-    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                      VkMemoryPropertyFlags properties, VkBuffer& buffer,
-                      VkDeviceMemory& bufferMemory);
+    void createBuffer(VkDeviceSize size, VmaMemoryUsage memUsage,
+                      VkBufferUsageFlags usage, VkBuffer& buffer,
+                      VmaAllocation& allocation);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
     SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
@@ -160,10 +162,10 @@ class VulkanAPI {
     std::vector<VkFence> imagesInFlight;
     VkFence copyFinishedFence;
 
+    VmaAllocator allocator;
     std::vector<uint32_t> numVerts;
     std::vector<VkBuffer> vertexBuffers;
-    // Rename to vertexBufferMemory
-    std::vector<VkDeviceMemory> vbMemory;
+    std::vector<VmaAllocation> vertexBufferAllocations;
 
     size_t currentFrame = 0;
 
