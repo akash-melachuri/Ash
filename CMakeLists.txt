@@ -47,9 +47,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 include_directories(Engine Engine/src)
-file(GLOB_RECURSE SOURCES Engine/*.cpp)
 
-add_library(ash ${SOURCES})
+file(GLOB_RECURSE SOURCES Engine/*.cpp)
+add_library(ash ${SOURCES} vendor/VulkanMemoryAllocator/src/vk_mem_alloc.h)
+target_include_directories(ash PUBLIC vendor/VulkanMemoryAllocator/src)
 target_precompile_headers(ash PRIVATE Engine/ashpch.h)
 target_compile_options(ash PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:/W4>
