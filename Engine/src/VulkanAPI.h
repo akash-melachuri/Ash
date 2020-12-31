@@ -61,7 +61,8 @@ class VulkanAPI {
 
     void setClearColor(const glm::vec4& color);
     void setPipeline(std::string name);
-    void submitVertexArray(std::vector<Vertex> verts);
+    void submitIndexedVertexArray(std::vector<Vertex> verts,
+                                  std::vector<uint32_t> indices);
 
    private:
     struct QueueFamilyIndices {
@@ -77,6 +78,20 @@ class VulkanAPI {
         VkSurfaceCapabilitiesKHR capabilities;
         std::vector<VkSurfaceFormatKHR> formats;
         std::vector<VkPresentModeKHR> presentModes;
+    };
+
+    struct VertexBuffer {
+        VkBuffer vertexBuffer;
+        VmaAllocation vertexBufferAllocation;
+    };
+
+    struct IndexedVertexBuffer {
+        uint32_t numIndices;
+
+        VkBuffer vertexBuffer;
+        VmaAllocation vertexBufferAllocation;
+        VkBuffer indexBuffer;
+        VmaAllocation indexBufferAllocation;
     };
 
     bool checkValidationSupport();
@@ -163,9 +178,7 @@ class VulkanAPI {
     VkFence copyFinishedFence;
 
     VmaAllocator allocator;
-    std::vector<uint32_t> numVerts;
-    std::vector<VkBuffer> vertexBuffers;
-    std::vector<VmaAllocation> vertexBufferAllocations;
+    std::vector<IndexedVertexBuffer> indexedMeshBuffers;
 
     size_t currentFrame = 0;
 

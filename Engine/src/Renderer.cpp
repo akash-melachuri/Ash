@@ -18,7 +18,18 @@ void Renderer::render() { api->render(); }
 void Renderer::cleanup() { api->cleanup(); }
 
 void Renderer::drawVertices(std::vector<Vertex> verts) {
-    api->submitVertexArray(verts);
+    std::vector<uint32_t> indices(verts.size());
+
+    for (uint32_t i = 0; i < verts.size(); i++) {
+        indices[i] = i;
+    }
+
+    api->submitIndexedVertexArray(verts, indices);
+}
+
+void Renderer::drawIndexedVertices(std::vector<Vertex> verts,
+                                   std::vector<uint32_t> indices) {
+    api->submitIndexedVertexArray(verts, indices);
 }
 
 void Renderer::setClearColor(const glm::vec4& clearColor) {

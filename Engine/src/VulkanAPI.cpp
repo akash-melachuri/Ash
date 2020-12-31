@@ -824,13 +824,17 @@ void VulkanAPI::recordCommandBuffers() {
 
         VkDeviceSize offsets[] = {0};
 
-        for (size_t j = 0; j < vertexBuffers.size(); j++) {
-            VkBuffer vb[] = {vertexBuffers[j]};
+        for (size_t j = 0; j < indexedMeshBuffers.size(); j++) {
+            VkBuffer vb[] = {indexedMeshBuffers[j].vertexBuffer};
 
             vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vb, offsets);
 
-            vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(numVerts[j]), 1,
-                      0, 0);
+            vkCmdBindIndexBuffer(commandBuffers[i],
+                                 indexedMeshBuffers[j].indexBuffer, 0,
+                                 VK_INDEX_TYPE_UINT32);
+
+            vkCmdDrawIndexed(commandBuffers[i],
+                             indexedMeshBuffers[j].numIndices, 1, 0, 0, 0);
         }
 
         vkCmdEndRenderPass(commandBuffers[i]);
@@ -1095,9 +1099,11 @@ void VulkanAPI::cleanup() {
 
     cleanupSwapchain();
 
-    for (size_t i = 0; i < vertexBuffers.size(); i++)
-        vmaDestroyBuffer(allocator, vertexBuffers[i],
-                         vertexBufferAllocations[i]);
+    for (IndexedVertexBuffer ivb : indexedMeshBuffers) {
+        vmaDestroyBuffer(allocator, ivb.vertexBuffer,
+                         ivb.vertexBufferAllocation);
+        vmaDestroyBuffer(allocator, ivb.indexBuffer, ivb.indexBufferAllocation);
+    }
 
     vmaDestroyAllocator(allocator);
 
@@ -1145,12 +1151,14 @@ void VulkanAPI::setClearColor(const glm::vec4& color) {
     shouldRecord = true;
 }
 
-void VulkanAPI::submitVertexArray(std::vector<Vertex> verts) {
-    vertexBuffers.resize(vertexBuffers.size() + 1);
-    vertexBufferAllocations.resize(vertexBufferAllocations.size() + 1);
-    numVerts.push_back(verts.size());
+void VulkanAPI::submitIndexedVertexArray(std::vector<Vertex> verts,
+                                         std::vector<uint32_t> indices) {
+    indexedMeshBuffers.push_back({});
 
-    VkDeviceSize bufferSize = sizeof(verts[0]) * verts.size();
+    indexedMeshBuffers[indexedMeshBuffers.size() - 1].numIndices =
+        indices.size();
+
+    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
     VkBuffer stagingBuffer;
     VmaAllocation stagingBufferAllocation;
@@ -1160,16 +1168,41 @@ void VulkanAPI::submitVertexArray(std::vector<Vertex> verts) {
 
     void* data;
     vmaMapMemory(allocator, stagingBufferAllocation, &data);
+    std::memcpy(data, indices.data(), static_cast<size_t>(bufferSize));
+    vmaUnmapMemory(allocator, stagingBufferAllocation);
+
+    createBuffer(
+        bufferSize, VMA_MEMORY_USAGE_GPU_ONLY,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        indexedMeshBuffers[indexedMeshBuffers.size() - 1].indexBuffer,
+        indexedMeshBuffers[indexedMeshBuffers.size() - 1]
+            .indexBufferAllocation);
+
+    copyBuffer(stagingBuffer,
+               indexedMeshBuffers[indexedMeshBuffers.size() - 1].indexBuffer,
+               bufferSize);
+
+    vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
+
+    bufferSize = sizeof(verts[0]) * verts.size();
+
+    createBuffer(bufferSize, VMA_MEMORY_USAGE_CPU_ONLY,
+                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBuffer,
+                 stagingBufferAllocation);
+
+    vmaMapMemory(allocator, stagingBufferAllocation, &data);
     std::memcpy(data, verts.data(), static_cast<size_t>(bufferSize));
     vmaUnmapMemory(allocator, stagingBufferAllocation);
 
     createBuffer(
         bufferSize, VMA_MEMORY_USAGE_GPU_ONLY,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        vertexBuffers[vertexBuffers.size() - 1],
-        vertexBufferAllocations[vertexBufferAllocations.size() - 1]);
+        indexedMeshBuffers[indexedMeshBuffers.size() - 1].vertexBuffer,
+        indexedMeshBuffers[indexedMeshBuffers.size() - 1]
+            .vertexBufferAllocation);
 
-    copyBuffer(stagingBuffer, vertexBuffers[vertexBuffers.size() - 1],
+    copyBuffer(stagingBuffer,
+               indexedMeshBuffers[indexedMeshBuffers.size() - 1].vertexBuffer,
                bufferSize);
 
     vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);

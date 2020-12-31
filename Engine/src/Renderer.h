@@ -23,6 +23,8 @@ class Renderer {
 
     static void setClearColor(const glm::vec4& clearColor);
     static void drawVertices(std::vector<Vertex> verts);
+    static void drawIndexedVertices(std::vector<Vertex> verts,
+                                    std::vector<uint32_t> indices);
 
     static inline std::shared_ptr<VulkanAPI> getAPI() { return api; }
 
