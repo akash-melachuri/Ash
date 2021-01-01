@@ -87,11 +87,10 @@ class VulkanAPI {
 
     struct IndexedVertexBuffer {
         uint32_t numIndices;
+        VkDeviceSize vertSize;
 
-        VkBuffer vertexBuffer;
-        VmaAllocation vertexBufferAllocation;
-        VkBuffer indexBuffer;
-        VmaAllocation indexBufferAllocation;
+        VkBuffer buffer;
+        VmaAllocation bufferAllocation;
     };
 
     bool checkValidationSupport();
