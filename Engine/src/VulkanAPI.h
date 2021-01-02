@@ -14,41 +14,11 @@
 #include <vector>
 
 #include "Core.h"
+#include "Helper.h"
+#include "Mesh.h"
 #include "Pipeline.h"
 
 namespace Ash {
-
-struct Vertex {
-    glm::vec2 pos;
-    glm::vec3 color;
-
-    static VkVertexInputBindingDescription getBindingDescription() {
-        VkVertexInputBindingDescription bindingDescription{};
-
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(Vertex);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-        return bindingDescription;
-    }
-
-    static std::array<VkVertexInputAttributeDescription, 2>
-    getAttributeDescription() {
-        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions;
-
-        attributeDescriptions[0].binding = 0;
-        attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(Vertex, color);
-
-        return attributeDescriptions;
-    }
-};
 
 class VulkanAPI {
    public:
@@ -61,8 +31,11 @@ class VulkanAPI {
 
     void setClearColor(const glm::vec4& color);
     void setPipeline(std::string name);
-    void submitIndexedVertexArray(std::vector<Vertex> verts,
-                                  std::vector<uint32_t> indices);
+
+    void submitBatch(const std::unordered_map<std::string, Mesh>& batch);
+
+    IndexedVertexBuffer createIndexedVertexArray(
+        const std::vector<Vertex>& verts, const std::vector<uint32_t>& indices);
 
    private:
     struct QueueFamilyIndices {
@@ -83,14 +56,6 @@ class VulkanAPI {
     struct VertexBuffer {
         VkBuffer vertexBuffer;
         VmaAllocation vertexBufferAllocation;
-    };
-
-    struct IndexedVertexBuffer {
-        uint32_t numIndices;
-        VkDeviceSize vertSize;
-
-        VkBuffer buffer;
-        VmaAllocation bufferAllocation;
     };
 
     bool checkValidationSupport();
@@ -162,6 +127,8 @@ class VulkanAPI {
     std::unordered_map<std::string, VkPipeline> graphicsPipelines;
     std::vector<Pipeline> pipelineObjects;
 
+    std::unordered_map<std::string, Mesh> batch;
+
     // When true, means command buffers need to be re-recorded because they are
     // outdated Usually means new object/change in rendering properties e.g.
     // changing clear color or shaders
@@ -177,7 +144,7 @@ class VulkanAPI {
     VkFence copyFinishedFence;
 
     VmaAllocator allocator;
-    std::vector<IndexedVertexBuffer> indexedMeshBuffers;
+    std::vector<IndexedVertexBuffer> indexedVertexBuffers;
 
     size_t currentFrame = 0;
 

@@ -1,7 +1,6 @@
 #include "VulkanAPI.h"
 
 #include "App.h"
-#include "Helper.h"
 
 namespace Ash {
 
@@ -824,17 +823,17 @@ void VulkanAPI::recordCommandBuffers() {
 
         VkDeviceSize offsets[] = {0};
 
-        for (size_t j = 0; j < indexedMeshBuffers.size(); j++) {
-            VkBuffer vb[] = {indexedMeshBuffers[j].buffer};
+        for (auto mesh : batch) {
+            VkBuffer vb[] = {mesh.second.ivb.buffer};
 
             vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vb, offsets);
 
-            vkCmdBindIndexBuffer(
-                commandBuffers[i], indexedMeshBuffers[j].buffer,
-                indexedMeshBuffers[j].vertSize, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(commandBuffers[i], mesh.second.ivb.buffer,
+                                 mesh.second.ivb.vertSize,
+                                 VK_INDEX_TYPE_UINT32);
 
-            vkCmdDrawIndexed(commandBuffers[i],
-                             indexedMeshBuffers[j].numIndices, 1, 0, 0, 0);
+            vkCmdDrawIndexed(commandBuffers[i], mesh.second.ivb.numIndices, 1,
+                             0, 0, 0);
         }
 
         vkCmdEndRenderPass(commandBuffers[i]);
@@ -1099,7 +1098,7 @@ void VulkanAPI::cleanup() {
 
     cleanupSwapchain();
 
-    for (IndexedVertexBuffer ivb : indexedMeshBuffers) {
+    for (IndexedVertexBuffer ivb : indexedVertexBuffers) {
         vmaDestroyBuffer(allocator, ivb.buffer, ivb.bufferAllocation);
     }
 
@@ -1149,14 +1148,20 @@ void VulkanAPI::setClearColor(const glm::vec4& color) {
     shouldRecord = true;
 }
 
-void VulkanAPI::submitIndexedVertexArray(std::vector<Vertex> verts,
-                                         std::vector<uint32_t> indices) {
-    indexedMeshBuffers.push_back({});
-    indexedMeshBuffers[indexedMeshBuffers.size() - 1].numIndices =
-        indices.size();
+void VulkanAPI::submitBatch(
+    const std::unordered_map<std::string, Mesh>& batch) {
+    this->batch = batch;
+
+    shouldRecord = true;
+}
+
+IndexedVertexBuffer VulkanAPI::createIndexedVertexArray(
+    const std::vector<Vertex>& verts, const std::vector<uint32_t>& indices) {
+    IndexedVertexBuffer ret{};
+    ret.numIndices = indices.size();
 
     VkDeviceSize vertSize = sizeof(verts[0]) * verts.size();
-    indexedMeshBuffers[indexedMeshBuffers.size() - 1].vertSize = vertSize;
+    ret.vertSize = vertSize;
 
     VkDeviceSize indicesSize = sizeof(indices[0]) * indices.size();
     VkDeviceSize bufferSize = vertSize + indicesSize;
@@ -1174,20 +1179,19 @@ void VulkanAPI::submitIndexedVertexArray(std::vector<Vertex> verts,
                 static_cast<size_t>(indicesSize));
     vmaUnmapMemory(allocator, stagingBufferAllocation);
 
-    createBuffer(
-        bufferSize, VMA_MEMORY_USAGE_GPU_ONLY,
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
-            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-        indexedMeshBuffers[indexedMeshBuffers.size() - 1].buffer,
-        indexedMeshBuffers[indexedMeshBuffers.size() - 1].bufferAllocation);
+    createBuffer(bufferSize, VMA_MEMORY_USAGE_GPU_ONLY,
+                 VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+                     VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                 ret.buffer, ret.bufferAllocation);
 
-    copyBuffer(stagingBuffer,
-               indexedMeshBuffers[indexedMeshBuffers.size() - 1].buffer,
-               bufferSize);
+    copyBuffer(stagingBuffer, ret.buffer, bufferSize);
 
     vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
 
-    shouldRecord = true;
+    indexedVertexBuffers.push_back(ret);
+
+    return ret;
 }
 
 /*
