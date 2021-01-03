@@ -25,10 +25,15 @@ class Renderer {
     static void loadMesh(const std::string& name,
                          const std::vector<Vertex>& verts,
                          const std::vector<uint32_t>& indices);
-    static void queueMesh(const std::string& name);
-    static void dequeueMesh(const std::string& name);
 
     static Mesh& getMesh(const std::string& name) { return batch[name]; }
+
+    // change to queueEntity and dequeueEntity
+    // OR BETTER just render all entities with Renderable component and whether
+    // they are visible or not by adding them appropriately to the batch if
+    // they're supposed to be rendered
+    static void queueMesh(const std::string& name);
+    static void dequeueMesh(const std::string& name);
 
     static void init();
     static void render();
@@ -40,11 +45,11 @@ class Renderer {
 
    private:
     static std::shared_ptr<VulkanAPI> api;
+
     static std::vector<Pipeline> pipelines;
 
-    // TODO: Change from meshes to Entities that store Mesh names
-    // VulkanAPI uses getMesh in order to retrieve the right buffer for each
-    // entity
+    // TODO: Change to <std::string (mesh names), std::vector<Entity>> for
+    // better batch rendering
     static std::unordered_map<std::string, Mesh> batch;
 
     static std::unordered_map<std::string, Mesh> meshes;
