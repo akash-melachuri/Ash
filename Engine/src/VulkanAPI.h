@@ -53,9 +53,9 @@ class VulkanAPI {
         std::vector<VkPresentModeKHR> presentModes;
     };
 
-    struct VertexBuffer {
-        VkBuffer vertexBuffer;
-        VmaAllocation vertexBufferAllocation;
+    struct UniformBuffer {
+        VkBuffer uniformBuffer;
+        VmaAllocation uniformBufferAllocation;
     };
 
     bool checkValidationSupport();
@@ -68,9 +68,11 @@ class VulkanAPI {
     void createSwapchain();
     void createImageViews();
     void createRenderPass();
+    void createDescriptorSetLayout();
     void createPipelineCache();
     void createGraphicsPipelines(const std::vector<Pipeline>& pipelines);
     void createFramebuffers();
+    void createUniformBuffers();
     void createCommandPools();
     void createCommandBuffers();
     void recordCommandBuffers();
@@ -82,6 +84,7 @@ class VulkanAPI {
                       VkBufferUsageFlags usage, VkBuffer& buffer,
                       VmaAllocation& allocation);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+    void updateUniformBuffers(uint32_t currentImage);
 
     SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
@@ -120,6 +123,8 @@ class VulkanAPI {
     std::vector<VkFramebuffer> swapchainFramebuffers;
 
     VkRenderPass renderPass;
+
+    VkDescriptorSetLayout descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
 
     VkPipelineCache pipelineCache;
@@ -144,7 +149,9 @@ class VulkanAPI {
     VkFence copyFinishedFence;
 
     VmaAllocator allocator;
+
     std::vector<IndexedVertexBuffer> indexedVertexBuffers;
+    std::vector<UniformBuffer> uniformBuffers;
 
     size_t currentFrame = 0;
 

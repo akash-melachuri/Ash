@@ -1,5 +1,11 @@
 #include "VulkanAPI.h"
 
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <chrono>
+
 #include "App.h"
 
 namespace Ash {
@@ -507,6 +513,23 @@ void VulkanAPI::createRenderPass() {
                "Failed to create render pass");
 }
 
+void VulkanAPI::createDescriptorSetLayout() {
+    VkDescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &uboLayoutBinding;
+
+    ASH_ASSERT(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr,
+                                           &descriptorSetLayout) == VK_SUCCESS,
+               "Failed to create descriptor set layout");
+}
+
 void VulkanAPI::createPipelineCache() {
     VkPipelineCacheCreateInfo cacheInfo{};
     cacheInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
@@ -640,6 +663,8 @@ void VulkanAPI::createGraphicsPipelines(
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
     ASH_ASSERT(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr,
                                       &pipelineLayout) == VK_SUCCESS,
@@ -739,6 +764,19 @@ void VulkanAPI::createFramebuffers() {
         ASH_ASSERT(vkCreateFramebuffer(device, &frameBufferInfo, nullptr,
                                        &swapchainFramebuffers[i]) == VK_SUCCESS,
                    "Failed to create framebuffer {}", i);
+    }
+}
+
+void VulkanAPI::createUniformBuffers() {
+    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+    uniformBuffers.resize(swapchainImages.size());
+
+    for (size_t i = 0; i < swapchainImages.size(); i++) {
+        createBuffer(bufferSize, VMA_MEMORY_USAGE_CPU_TO_GPU,
+                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                     uniformBuffers[i].uniformBuffer,
+                     uniformBuffers[i].uniformBufferAllocation);
     }
 }
 
@@ -895,6 +933,11 @@ void VulkanAPI::cleanupSwapchain() {
         vkDestroyImageView(device, imageView, nullptr);
 
     vkDestroySwapchainKHR(device, swapchain, nullptr);
+
+    for (auto buffer : uniformBuffers) {
+        vmaDestroyBuffer(allocator, buffer.uniformBuffer,
+                         buffer.uniformBufferAllocation);
+    }
 }
 
 void VulkanAPI::recreateSwapchain() {
@@ -916,6 +959,7 @@ void VulkanAPI::recreateSwapchain() {
     createRenderPass();
     createGraphicsPipelines(pipelineObjects);
     createFramebuffers();
+    createUniformBuffers();
     createCommandBuffers();
 }
 
@@ -1013,9 +1057,38 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createPipelineCache();
     createGraphicsPipelines(pipelines);
     createFramebuffers();
+    createUniformBuffers();
     createCommandPools();
     createCommandBuffers();
     createSyncObjects();
+}
+
+void VulkanAPI::updateUniformBuffers(uint32_t currentImage) {
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(
+                     currentTime - startTime)
+                     .count();
+
+    UniformBufferObject ubo{};
+    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f),
+                            glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view =
+        glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+                    glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.proj = glm::perspective(
+        glm::radians(45.0f),
+        swapchainExtent.width / (float)swapchainExtent.height, 0.1f, 10.0f);
+
+    ubo.proj[1][1] *= -1;
+
+    void* data;
+    vmaMapMemory(allocator,
+                 uniformBuffers[currentImage].uniformBufferAllocation, &data);
+    std::memcpy(data, &ubo, sizeof(ubo));
+    vmaUnmapMemory(allocator,
+                   uniformBuffers[currentImage].uniformBufferAllocation);
 }
 
 void VulkanAPI::render() {
@@ -1097,6 +1170,8 @@ void VulkanAPI::cleanup() {
     vkDestroyPipelineCache(device, pipelineCache, nullptr);
 
     cleanupSwapchain();
+
+    vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
     for (IndexedVertexBuffer ivb : indexedVertexBuffers) {
         vmaDestroyBuffer(allocator, ivb.buffer, ivb.bufferAllocation);
