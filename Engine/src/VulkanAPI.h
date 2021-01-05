@@ -73,6 +73,8 @@ class VulkanAPI {
     void createGraphicsPipelines(const std::vector<Pipeline>& pipelines);
     void createFramebuffers();
     void createUniformBuffers();
+    void createDescriptorPool();
+    void createDescriptorSets();
     void createCommandPools();
     void createCommandBuffers();
     void recordCommandBuffers();
@@ -126,6 +128,9 @@ class VulkanAPI {
 
     VkDescriptorSetLayout descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
+
+    VkDescriptorPool descriptorPool;
+    std::vector<VkDescriptorSet> descriptorSets;
 
     VkPipelineCache pipelineCache;
     std::string currentPipeline = "main";
