@@ -59,6 +59,10 @@ void App::addSystem(System* system) {
 void App::run() {
     APP_INFO("Running!");
 
+    auto now = std::chrono::high_resolution_clock::now();
+
+    uint32_t frames = 0;
+
     while (!window->shouldClose()) {
         for (auto system : systems) system->onUpdate();
 
@@ -66,6 +70,21 @@ void App::run() {
 
         window->swapBuffers();
         window->pollEvents();
+
+        frames++;
+
+        auto end = std::chrono::high_resolution_clock::now();
+        auto frametime =
+            std::chrono::duration_cast<std::chrono::milliseconds>(end - now)
+                .count();
+
+        if (frametime >= 1000.0f) {
+            ASH_INFO("Average frame time: {} ms",
+                     (float)frametime / (float)frames);
+
+            now = std::chrono::high_resolution_clock::now();
+            frames = 0;
+        }
     }
 }
 
