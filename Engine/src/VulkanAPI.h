@@ -15,7 +15,6 @@
 
 #include "Core.h"
 #include "Helper.h"
-#include "Mesh.h"
 #include "Pipeline.h"
 
 namespace Ash {

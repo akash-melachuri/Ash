@@ -906,6 +906,7 @@ void VulkanAPI::recordCommandBuffers() {
         vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo,
                              VK_SUBPASS_CONTENTS_INLINE);
 
+        // Each model should have their own pipeline
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
                           graphicsPipelines[currentPipeline]);
 
@@ -914,15 +915,20 @@ void VulkanAPI::recordCommandBuffers() {
         for (auto mesh : batch) {
             VkBuffer vb[] = {mesh.second.ivb.buffer};
 
+            // Each model has their own mesh and thus their own vertex and index
+            // buffers
             vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vb, offsets);
 
             vkCmdBindIndexBuffer(commandBuffers[i], mesh.second.ivb.buffer,
                                  mesh.second.ivb.vertSize,
                                  VK_INDEX_TYPE_UINT32);
 
+            // Each entity has their own transform and thus their own UBO
+            // transform matrix
             vkCmdBindDescriptorSets(
                 commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
                 pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
+
             vkCmdDrawIndexed(commandBuffers[i], mesh.second.ivb.numIndices, 1,
                              0, 0, 0);
         }

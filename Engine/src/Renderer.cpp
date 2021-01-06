@@ -16,7 +16,7 @@ void Renderer::setPipeline(const std::string& name) { api->setPipeline(name); }
 void Renderer::loadMesh(const std::string& name,
                         const std::vector<Vertex>& verts,
                         const std::vector<uint32_t>& indices) {
-    meshes[name] = Mesh(name, verts, indices);
+    meshes[name] = {name, createIndexedVertexBuffer(verts, indices)};
 }
 
 void Renderer::queueMesh(const std::string& name) {

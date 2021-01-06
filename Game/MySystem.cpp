@@ -1,7 +1,5 @@
 #include "MySystem.h"
 
-#include <Mesh.h>
-
 MySystem::MySystem() {}
 MySystem::~MySystem() {}
 

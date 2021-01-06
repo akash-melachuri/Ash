@@ -5,6 +5,9 @@
 
 #include <glm/glm.hpp>
 
+#include <array>
+#include <vector>
+
 namespace Ash {
 
 struct UniformBufferObject {
@@ -51,6 +54,11 @@ struct IndexedVertexBuffer {
 
     VkBuffer buffer;
     VmaAllocation bufferAllocation;
+};
+
+struct Mesh {
+    std::string name;
+    IndexedVertexBuffer ivb;
 };
 
 namespace Helper {
