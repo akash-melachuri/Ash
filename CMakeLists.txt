@@ -47,6 +47,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 include_directories(Engine Engine/src)
+include_directories(vendor/entt/include)
 
 file(GLOB_RECURSE SOURCES Engine/*.cpp)
 add_library(ash ${SOURCES} vendor/VulkanMemoryAllocator/src/vk_mem_alloc.h)
