@@ -7,6 +7,7 @@
 
 #include "Helper.h"
 #include "Pipeline.h"
+#include "Scene.h"
 #include "VulkanAPI.h"
 
 namespace Ash {

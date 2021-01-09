@@ -10,7 +10,7 @@ class Entity {
     Entity(entt::entity handle) : handle(handle) {}
     ~Entity();
 
-    entt::entity& getHandle() { return handle; }
+    entt::entity getHandle() { return handle; }
 
    private:
     entt::entity handle;
