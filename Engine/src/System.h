@@ -2,10 +2,10 @@
 
 namespace Ash {
 
-class System {
+class Layer {
    public:
-    System() {}
-    virtual ~System() = default;
+    Layer() {}
+    virtual ~Layer() = default;
 
     virtual void init() = 0;
     virtual void onUpdate() = 0;

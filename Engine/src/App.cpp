@@ -51,9 +51,18 @@ void App::cleanup() {
     delete instance;
 }
 
-void App::addSystem(System* system) {
-    system->init();
-    instance->systems.push_back(system);
+void App::addLayer(Layer* layer) {
+    layer->init();
+    instance->systems.push_back(layer);
+}
+
+void App::setScene(Scene& scene) {
+    // TODO: Set scene in renderer
+    // Record command buffers with scene data
+
+    // Set App reference to scene
+    // Allow for user to make systems that update on certain components
+    // Maybe hand raw entt iterable to user for ultimate control?
 }
 
 void App::run() {

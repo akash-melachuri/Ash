@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "Scene.h"
 #include "System.h"
 #include "Window.h"
 
@@ -16,7 +17,8 @@ class App {
     static void init();
     static void start();
     static void cleanup();
-    static void addSystem(System* system);
+    static void addLayer(Layer* layer);
+    static void setScene(Scene& scene);
 
     inline static App* get() { return instance; }
 
@@ -28,7 +30,7 @@ class App {
     void run();
 
     std::shared_ptr<Window> window;
-    std::vector<System*> systems;
+    std::vector<Layer*> systems;
 
     static App* instance;
 };

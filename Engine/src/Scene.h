@@ -4,6 +4,7 @@
 
 #include "Core.h"
 #include "Entity.h"
+#include "Log.h"
 
 namespace Ash {
 
