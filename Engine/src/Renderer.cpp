@@ -6,6 +6,7 @@ std::shared_ptr<VulkanAPI> Renderer::api = std::make_shared<VulkanAPI>();
 std::vector<Pipeline> Renderer::pipelines;
 std::unordered_map<std::string, Mesh> Renderer::batch;
 std::unordered_map<std::string, Mesh> Renderer::meshes;
+std::shared_ptr<Scene> Renderer::scene;
 
 void Renderer::loadPipeline(const Pipeline& pipeline) {
     pipelines.push_back(pipeline);
@@ -45,6 +46,12 @@ IndexedVertexBuffer Renderer::createIndexedVertexBuffer(
 
 void Renderer::setClearColor(const glm::vec4& clearColor) {
     api->setClearColor(clearColor);
+}
+
+void Renderer::setScene(std::shared_ptr<Scene> scene) {
+    Renderer::scene = scene;
+    // TODO: API queue Scene method which will take in a scene object and record
+    // command buffers to render the scene's renderable entities
 }
 
 }  // namespace Ash

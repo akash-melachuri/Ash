@@ -56,8 +56,8 @@ void App::addLayer(Layer* layer) {
     instance->systems.push_back(layer);
 }
 
-void App::setScene(Scene& scene) {
-    // TODO: Set scene in renderer
+void App::setScene(std::shared_ptr<Scene> scene) {
+    Renderer::setScene(scene);
     // Record command buffers with scene data
 
     // Set App reference to scene
