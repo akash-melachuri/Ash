@@ -1,0 +1,26 @@
+#pragma once
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
+
+namespace Ash {
+
+struct Transform {
+    glm::vec3 position{0.0f};
+    glm::vec3 rotation{0.0f};
+    glm::vec3 scale{1.0f};
+
+    Transform(const glm::vec3& pos) : position(pos){};
+
+    glm::mat4 getTransform() const {
+        glm::mat4 rotationMatrix = glm::toMat4(glm::quat(rotation));
+
+        return glm::translate(glm::mat4(1.0f), position) * rotationMatrix *
+               glm::scale(glm::mat4(1.0f), scale);
+    }
+};
+
+}  // namespace Ash
