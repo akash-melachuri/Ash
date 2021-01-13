@@ -43,6 +43,8 @@ class Renderer {
     static void setClearColor(const glm::vec4& clearColor);
     static void setScene(std::shared_ptr<Scene> scene);
 
+    static inline std::shared_ptr<Scene> getScene() { return scene; }
+
     static inline std::shared_ptr<VulkanAPI> getAPI() { return api; }
 
    private:

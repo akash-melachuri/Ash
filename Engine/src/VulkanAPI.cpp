@@ -7,6 +7,8 @@
 #include <chrono>
 
 #include "App.h"
+#include "Components.h"
+#include "Renderer.h"
 
 namespace Ash {
 
@@ -912,6 +914,13 @@ void VulkanAPI::recordCommandBuffers() {
                           graphicsPipelines[currentPipeline]);
 
         VkDeviceSize offsets[] = {0};
+
+        //        std::shared_ptr<Scene> scene = Renderer::getScene();
+
+        //        auto renderables = scene->registry.view<Transform, Model>();
+
+        //        for (auto entity : renderables) {
+        //        }
 
         for (auto mesh : batch) {
             VkBuffer vb[] = {mesh.second.ivb.buffer};

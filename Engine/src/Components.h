@@ -6,6 +6,10 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
+#include <vector>
+
+#include "Helper.h"
+
 namespace Ash {
 
 struct Transform {
@@ -20,6 +24,18 @@ struct Transform {
 
         return glm::translate(glm::mat4(1.0f), position) * rotationMatrix *
                glm::scale(glm::mat4(1.0f), scale);
+    }
+};
+
+struct Model {
+    std::vector<VkDescriptorSet> descriptorSets;
+
+    std::string pipeline;
+    std::string mesh;
+
+    Model(const std::string& mesh, const std::string& pipeline)
+        : pipeline(pipeline), mesh(mesh) {
+        // initialize descriptor sets
     }
 };
 
