@@ -28,8 +28,6 @@ struct Transform {
 };
 
 struct Model {
-    std::vector<VkDescriptorSet> descriptorSets;
-
     std::string pipeline;
     std::string mesh;
 
@@ -37,6 +35,14 @@ struct Model {
         : pipeline(pipeline), mesh(mesh) {
         // initialize descriptor sets
     }
+};
+
+struct Renderable {
+    std::vector<UniformBuffer> ubo;
+    std::vector<VkDescriptorSet> descriptorSets;
+
+    Transform transform;
+    Model model;
 };
 
 }  // namespace Ash

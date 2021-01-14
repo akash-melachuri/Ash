@@ -52,11 +52,6 @@ class VulkanAPI {
         std::vector<VkPresentModeKHR> presentModes;
     };
 
-    struct UniformBuffer {
-        VkBuffer uniformBuffer;
-        VmaAllocation uniformBufferAllocation;
-    };
-
     bool checkValidationSupport();
     void createInstance();
     void setupDebugMessenger();
@@ -73,7 +68,6 @@ class VulkanAPI {
     void createFramebuffers();
     void createUniformBuffers();
     void createDescriptorPool();
-    void createDescriptorSets();
     void createCommandPools();
     void createCommandBuffers();
     void recordCommandBuffers();
@@ -86,6 +80,9 @@ class VulkanAPI {
                       VmaAllocation& allocation);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     void updateUniformBuffers(uint32_t currentImage);
+
+    void createDescriptorSets(std::vector<VkDescriptorSet>& sets,
+                              const std::vector<UniformBuffer>& ubo);
 
     SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
