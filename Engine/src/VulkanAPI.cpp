@@ -770,6 +770,8 @@ void VulkanAPI::createFramebuffers() {
     }
 }
 
+// Generalize this method
+
 void VulkanAPI::createUniformBuffers() {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -811,7 +813,7 @@ void VulkanAPI::createDescriptorSets(std::vector<VkDescriptorSet>& sets,
         static_cast<uint32_t>(swapchainImages.size());
     allocInfo.pSetLayouts = layouts.data();
 
-    descriptorSets.resize(swapchainImages.size());
+    sets.resize(swapchainImages.size());
     ASH_ASSERT(
         vkAllocateDescriptorSets(device, &allocInfo, sets.data()) == VK_SUCCESS,
         "Failed to allocate descriptor sets");

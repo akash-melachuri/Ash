@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "Helper.h"
+#include "Renderer.h"
 
 namespace Ash {
 
@@ -32,17 +33,20 @@ struct Model {
     std::string mesh;
 
     Model(const std::string& mesh, const std::string& pipeline)
-        : pipeline(pipeline), mesh(mesh) {
-        // initialize descriptor sets
-    }
+        : pipeline(pipeline), mesh(mesh) {}
 };
 
 struct Renderable {
-    std::vector<UniformBuffer> ubo;
+    std::vector<UniformBuffer> ubos;
     std::vector<VkDescriptorSet> descriptorSets;
 
-    Transform transform;
+    Renderable(const Model& model, const Transform& transform)
+        : model(model), transform(transform) {
+        Renderer::getAPI()->createDescriptorSets(descriptorSets, ubos);
+    }
+
     Model model;
+    Transform transform;
 };
 
 }  // namespace Ash
