@@ -7,6 +7,8 @@
 #include <chrono>
 
 #include "App.h"
+#include "Components.h"
+#include "Renderer.h"
 
 namespace Ash {
 
@@ -768,20 +770,19 @@ void VulkanAPI::createFramebuffers() {
     }
 }
 
-void VulkanAPI::createUniformBuffers() {
+void VulkanAPI::createUniformBuffers(std::vector<UniformBuffer>& ubos) {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
-    uniformBuffers.resize(swapchainImages.size());
+    ubos.resize(swapchainImages.size());
 
     for (size_t i = 0; i < swapchainImages.size(); i++) {
         createBuffer(bufferSize, VMA_MEMORY_USAGE_CPU_TO_GPU,
-                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                     uniformBuffers[i].uniformBuffer,
-                     uniformBuffers[i].uniformBufferAllocation);
+                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, ubos[i].uniformBuffer,
+                     ubos[i].uniformBufferAllocation);
     }
 }
 
-void VulkanAPI::createDescriptorPool() {
+void VulkanAPI::createDescriptorPool(uint32_t maxSets) {
     VkDescriptorPoolSize poolSize{};
     poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSize.descriptorCount = static_cast<uint32_t>(swapchainImages.size());
@@ -790,14 +791,15 @@ void VulkanAPI::createDescriptorPool() {
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = 1;
     poolInfo.pPoolSizes = &poolSize;
-    poolInfo.maxSets = static_cast<uint32_t>(swapchainImages.size());
+    poolInfo.maxSets = static_cast<uint32_t>(swapchainImages.size() * maxSets);
 
     ASH_ASSERT(vkCreateDescriptorPool(device, &poolInfo, nullptr,
                                       &descriptorPool) == VK_SUCCESS,
                "Failed to create descriptor pool");
 }
 
-void VulkanAPI::createDescriptorSets() {
+void VulkanAPI::createDescriptorSets(std::vector<VkDescriptorSet>& sets,
+                                     const std::vector<UniformBuffer>& ubo) {
     std::vector<VkDescriptorSetLayout> layouts(swapchainImages.size(),
                                                descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -807,20 +809,20 @@ void VulkanAPI::createDescriptorSets() {
         static_cast<uint32_t>(swapchainImages.size());
     allocInfo.pSetLayouts = layouts.data();
 
-    descriptorSets.resize(swapchainImages.size());
-    ASH_ASSERT(vkAllocateDescriptorSets(device, &allocInfo,
-                                        descriptorSets.data()) == VK_SUCCESS,
-               "Failed to allocate descriptor sets");
+    sets.resize(swapchainImages.size());
+    ASH_ASSERT(
+        vkAllocateDescriptorSets(device, &allocInfo, sets.data()) == VK_SUCCESS,
+        "Failed to allocate descriptor sets");
 
     for (size_t i = 0; i < swapchainImages.size(); i++) {
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = uniformBuffers[i].uniformBuffer;
+        bufferInfo.buffer = ubo[i].uniformBuffer;
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(UniformBufferObject);
 
         VkWriteDescriptorSet descriptorWrite{};
         descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = descriptorSets[i];
+        descriptorWrite.dstSet = sets[i];
         descriptorWrite.dstBinding = 0;
         descriptorWrite.dstArrayElement = 0;
         descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -913,6 +915,13 @@ void VulkanAPI::recordCommandBuffers() {
 
         VkDeviceSize offsets[] = {0};
 
+        //        std::shared_ptr<Scene> scene = Renderer::getScene();
+
+        //        auto renderables = scene->registry.view<Transform, Model>();
+
+        //        for (auto entity : renderables) {
+        //        }
+
         for (auto mesh : batch) {
             VkBuffer vb[] = {mesh.second.ivb.buffer};
 
@@ -924,8 +933,12 @@ void VulkanAPI::recordCommandBuffers() {
                                  mesh.second.ivb.vertSize,
                                  VK_INDEX_TYPE_UINT32);
 
-            // Each entity has their own transform and thus their own UBO
-            // transform matrix
+            // vkUpdateDescriptorSets ? look up if this is slow/fast
+            // otherwise use unique descriptor sets for every entity - seems
+            // wasteful
+
+            // Each entity has their own transform and thus their own
+            // UBO transform matrix
             vkCmdBindDescriptorSets(
                 commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
                 pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
@@ -1021,9 +1034,9 @@ void VulkanAPI::recreateSwapchain() {
     createRenderPass();
     createGraphicsPipelines(pipelineObjects);
     createFramebuffers();
-    createUniformBuffers();
-    createDescriptorPool();
-    createDescriptorSets();
+    createUniformBuffers(uniformBuffers);
+    createDescriptorPool(MAX_DESCRIPTOR_SETS);
+    createDescriptorSets(descriptorSets, uniformBuffers);
     createCommandBuffers();
 }
 
@@ -1122,9 +1135,9 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createDescriptorSetLayout();
     createGraphicsPipelines(pipelines);
     createFramebuffers();
-    createUniformBuffers();
-    createDescriptorPool();
-    createDescriptorSets();
+    createUniformBuffers(uniformBuffers);
+    createDescriptorPool(MAX_DESCRIPTOR_SETS);
+    createDescriptorSets(descriptorSets, uniformBuffers);
     createCommandPools();
     createCommandBuffers();
     createSyncObjects();

@@ -18,7 +18,7 @@ class App {
     static void start();
     static void cleanup();
     static void addLayer(Layer* layer);
-    static void setScene(Scene& scene);
+    static void setScene(std::shared_ptr<Scene> scene);
 
     inline static App* get() { return instance; }
 

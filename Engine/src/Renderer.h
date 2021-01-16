@@ -41,6 +41,9 @@ class Renderer {
     static void cleanup();
 
     static void setClearColor(const glm::vec4& clearColor);
+    static void setScene(std::shared_ptr<Scene> scene);
+
+    static inline std::shared_ptr<Scene> getScene() { return scene; }
 
     static inline std::shared_ptr<VulkanAPI> getAPI() { return api; }
 
@@ -48,6 +51,8 @@ class Renderer {
     static std::shared_ptr<VulkanAPI> api;
 
     static std::vector<Pipeline> pipelines;
+
+    static std::shared_ptr<Scene> scene;
 
     // TODO: Change to <std::string (mesh names), std::vector<Entity>> for
     // better batch rendering

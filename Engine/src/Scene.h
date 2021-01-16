@@ -30,11 +30,13 @@ class Scene {
     void removeComponent(Entity entity) {
         if (!hasComponent<T>(entity)) return;
         registry.remove<T>(entity.getHandle());
+        struct Transform {
+            float x, y, z;
+        };
     }
 
     // TODO: Systems?
 
-   private:
     entt::registry registry;
 };
 

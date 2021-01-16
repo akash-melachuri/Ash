@@ -10,6 +10,11 @@
 
 namespace Ash {
 
+struct UniformBuffer {
+    VkBuffer uniformBuffer;
+    VmaAllocation uniformBufferAllocation;
+};
+
 struct UniformBufferObject {
     glm::mat4 model;
     glm::mat4 view;
