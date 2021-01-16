@@ -1,7 +1,4 @@
-#pragma once
-
-#include <entt/entt.hpp>
-
+#pragma once #include < entt / entt.hpp>
 #include "Core.h"
 #include "Entity.h"
 #include "Log.h"
