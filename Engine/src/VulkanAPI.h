@@ -17,6 +17,8 @@
 #include "Helper.h"
 #include "Pipeline.h"
 
+#define MAX_DESCRIPTOR_SETS 10
+
 namespace Ash {
 
 class VulkanAPI {
@@ -37,6 +39,7 @@ class VulkanAPI {
         const std::vector<Vertex>& verts, const std::vector<uint32_t>& indices);
     void createDescriptorSets(std::vector<VkDescriptorSet>& sets,
                               const std::vector<UniformBuffer>& ubo);
+    void createUniformBuffers(std::vector<UniformBuffer>& ubos);
 
    private:
     struct QueueFamilyIndices {
@@ -68,8 +71,7 @@ class VulkanAPI {
     void createPipelineCache();
     void createGraphicsPipelines(const std::vector<Pipeline>& pipelines);
     void createFramebuffers();
-    void createUniformBuffers();
-    void createDescriptorPool();
+    void createDescriptorPool(uint32_t maxSets);
     void createCommandPools();
     void createCommandBuffers();
     void recordCommandBuffers();

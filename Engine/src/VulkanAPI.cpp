@@ -770,32 +770,28 @@ void VulkanAPI::createFramebuffers() {
     }
 }
 
-// Generalize this method
-
-void VulkanAPI::createUniformBuffers() {
+void VulkanAPI::createUniformBuffers(std::vector<UniformBuffer>& ubos) {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
-    uniformBuffers.resize(swapchainImages.size());
+    ubos.resize(swapchainImages.size());
 
     for (size_t i = 0; i < swapchainImages.size(); i++) {
         createBuffer(bufferSize, VMA_MEMORY_USAGE_CPU_TO_GPU,
-                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                     uniformBuffers[i].uniformBuffer,
-                     uniformBuffers[i].uniformBufferAllocation);
+                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, ubos[i].uniformBuffer,
+                     ubos[i].uniformBufferAllocation);
     }
 }
 
-void VulkanAPI::createDescriptorPool() {
+void VulkanAPI::createDescriptorPool(uint32_t maxSets) {
     VkDescriptorPoolSize poolSize{};
     poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSize.descriptorCount =
-        static_cast<uint32_t>(swapchainImages.size() * 100);
+    poolSize.descriptorCount = static_cast<uint32_t>(swapchainImages.size());
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = 1;
     poolInfo.pPoolSizes = &poolSize;
-    poolInfo.maxSets = static_cast<uint32_t>(swapchainImages.size());
+    poolInfo.maxSets = static_cast<uint32_t>(swapchainImages.size() * maxSets);
 
     ASH_ASSERT(vkCreateDescriptorPool(device, &poolInfo, nullptr,
                                       &descriptorPool) == VK_SUCCESS,
@@ -1038,8 +1034,8 @@ void VulkanAPI::recreateSwapchain() {
     createRenderPass();
     createGraphicsPipelines(pipelineObjects);
     createFramebuffers();
-    createUniformBuffers();
-    createDescriptorPool();
+    createUniformBuffers(uniformBuffers);
+    createDescriptorPool(MAX_DESCRIPTOR_SETS);
     createDescriptorSets(descriptorSets, uniformBuffers);
     createCommandBuffers();
 }
@@ -1139,8 +1135,8 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createDescriptorSetLayout();
     createGraphicsPipelines(pipelines);
     createFramebuffers();
-    createUniformBuffers();
-    createDescriptorPool();
+    createUniformBuffers(uniformBuffers);
+    createDescriptorPool(MAX_DESCRIPTOR_SETS);
     createDescriptorSets(descriptorSets, uniformBuffers);
     createCommandPools();
     createCommandBuffers();

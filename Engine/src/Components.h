@@ -28,25 +28,18 @@ struct Transform {
     }
 };
 
-struct Model {
-    std::string pipeline;
-    std::string mesh;
-
-    Model(const std::string& mesh, const std::string& pipeline)
-        : pipeline(pipeline), mesh(mesh) {}
-};
-
 struct Renderable {
     std::vector<UniformBuffer> ubos;
     std::vector<VkDescriptorSet> descriptorSets;
 
-    Renderable(const Model& model, const Transform& transform)
-        : model(model), transform(transform) {
+    Renderable(const std::string& mesh, const std::string& pipeline)
+        : mesh(mesh), pipeline(pipeline) {
+        Renderer::getAPI()->createUniformBuffers(ubos);
         Renderer::getAPI()->createDescriptorSets(descriptorSets, ubos);
     }
 
-    Model model;
-    Transform transform;
+    std::string mesh;
+    std::string pipeline;
 };
 
 }  // namespace Ash
