@@ -785,7 +785,8 @@ void VulkanAPI::createUniformBuffers(std::vector<UniformBuffer>& ubos) {
 void VulkanAPI::createDescriptorPool(uint32_t maxSets) {
     VkDescriptorPoolSize poolSize{};
     poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSize.descriptorCount = static_cast<uint32_t>(swapchainImages.size());
+    poolSize.descriptorCount =
+        static_cast<uint32_t>(swapchainImages.size() * maxSets);
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1007,11 +1008,6 @@ void VulkanAPI::cleanupSwapchain() {
 
     vkDestroySwapchainKHR(device, swapchain, nullptr);
 
-    for (auto buffer : uniformBuffers) {
-        vmaDestroyBuffer(allocator, buffer.uniformBuffer,
-                         buffer.uniformBufferAllocation);
-    }
-
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 }
 
@@ -1034,7 +1030,6 @@ void VulkanAPI::recreateSwapchain() {
     createRenderPass();
     createGraphicsPipelines(pipelineObjects);
     createFramebuffers();
-    createUniformBuffers(uniformBuffers);
     createDescriptorPool(MAX_DESCRIPTOR_SETS);
     createDescriptorSets(descriptorSets, uniformBuffers);
     createCommandBuffers();
@@ -1252,6 +1247,21 @@ void VulkanAPI::cleanup() {
     vkDestroyPipelineCache(device, pipelineCache, nullptr);
 
     cleanupSwapchain();
+
+    for (auto buffer : uniformBuffers) {
+        vmaDestroyBuffer(allocator, buffer.uniformBuffer,
+                         buffer.uniformBufferAllocation);
+    }
+
+    std::shared_ptr<Scene> scene = Renderer::getScene();
+    auto renderables = scene->registry.view<Renderable>();
+    for (auto entity : renderables) {
+        auto& renderable = renderables.get<Renderable>(entity);
+        for (auto buffer : renderable.ubos) {
+            vmaDestroyBuffer(allocator, buffer.uniformBuffer,
+                             buffer.uniformBufferAllocation);
+        }
+    }
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 

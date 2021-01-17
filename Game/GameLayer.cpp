@@ -1,5 +1,6 @@
 #include "GameLayer.h"
 
+#include <Components.h>
 #include <Scene.h>
 
 GameLayer::GameLayer() {}
@@ -16,11 +17,11 @@ std::shared_ptr<Scene> scene;
 
 void GameLayer::init() {
     scene = std::make_shared<Scene>();
-    // Renderer::loadMesh("Mesh", vertices, indices);
+    Renderer::loadMesh("Quad", vertices, indices);
     // Renderer::queueMesh("Mesh");
 
-    // Entity e = scene->spawn();
-    // scene->addComponent<Position>(e, 0.0f, 0.0f, 0.0f);
+    Entity e = scene->spawn();
+    scene->addComponent<Renderable>(e, "Quad", "main");
     Renderer::setScene(scene);
 }
 
