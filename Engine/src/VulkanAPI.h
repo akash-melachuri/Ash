@@ -32,6 +32,7 @@ class VulkanAPI {
 
     void setClearColor(const glm::vec4& color);
     void setPipeline(std::string name);
+    void inline signalRecord() { shouldRecord = true; }
 
     void submitBatch(const std::unordered_map<std::string, Mesh>& batch);
 

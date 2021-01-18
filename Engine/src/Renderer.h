@@ -27,7 +27,7 @@ class Renderer {
                          const std::vector<Vertex>& verts,
                          const std::vector<uint32_t>& indices);
 
-    static Mesh& getMesh(const std::string& name) { return batch[name]; }
+    static Mesh& getMesh(const std::string& name) { return meshes[name]; }
 
     // change to queueEntity and dequeueEntity
     // OR BETTER just render all entities with Renderable component and whether

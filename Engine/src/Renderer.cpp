@@ -52,6 +52,7 @@ void Renderer::setScene(std::shared_ptr<Scene> scene) {
     Renderer::scene = scene;
     // TODO: API queue Scene method which will take in a scene object and record
     // command buffers to render the scene's renderable entities
+    api->signalRecord();
 }
 
 }  // namespace Ash

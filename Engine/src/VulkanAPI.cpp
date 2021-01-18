@@ -451,6 +451,7 @@ void VulkanAPI::createSwapchain() {
 }
 
 void VulkanAPI::createImageViews() {
+    ASH_INFO("Creating image views");
     swapchainImageViews.resize(swapchainImages.size());
     for (size_t i = 0; i < swapchainImages.size(); i++) {
         VkImageViewCreateInfo createInfo{};
@@ -475,6 +476,7 @@ void VulkanAPI::createImageViews() {
 }
 
 void VulkanAPI::createRenderPass() {
+    ASH_INFO("Creating render pass");
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = swapchainImageFormat;
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -517,6 +519,7 @@ void VulkanAPI::createRenderPass() {
 }
 
 void VulkanAPI::createDescriptorSetLayout() {
+    ASH_INFO("Creating descriptor set layout");
     VkDescriptorSetLayoutBinding uboLayoutBinding{};
     uboLayoutBinding.binding = 0;
     uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -534,6 +537,7 @@ void VulkanAPI::createDescriptorSetLayout() {
 }
 
 void VulkanAPI::createPipelineCache() {
+    ASH_INFO("Creating pipeline cache");
     VkPipelineCacheCreateInfo cacheInfo{};
     cacheInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 
@@ -544,6 +548,8 @@ void VulkanAPI::createPipelineCache() {
 
 void VulkanAPI::createGraphicsPipelines(
     const std::vector<Pipeline>& pipelines) {
+    ASH_INFO("Creating graphics pipelines");
+
     pipelineObjects = pipelines;
 
     std::vector<char> vert =
@@ -750,6 +756,8 @@ void VulkanAPI::createGraphicsPipelines(
 }
 
 void VulkanAPI::createFramebuffers() {
+    ASH_INFO("Creating framebuffers");
+
     swapchainFramebuffers.resize(swapchainImageViews.size());
 
     for (size_t i = 0; i < swapchainImageViews.size(); i++) {
@@ -771,6 +779,8 @@ void VulkanAPI::createFramebuffers() {
 }
 
 void VulkanAPI::createUniformBuffers(std::vector<UniformBuffer>& ubos) {
+    ASH_INFO("Creating uniform buffers");
+
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
     ubos.resize(swapchainImages.size());
@@ -783,6 +793,7 @@ void VulkanAPI::createUniformBuffers(std::vector<UniformBuffer>& ubos) {
 }
 
 void VulkanAPI::createDescriptorPool(uint32_t maxSets) {
+    ASH_INFO("Creating descriptor pool");
     VkDescriptorPoolSize poolSize{};
     poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSize.descriptorCount =
@@ -801,6 +812,7 @@ void VulkanAPI::createDescriptorPool(uint32_t maxSets) {
 
 void VulkanAPI::createDescriptorSets(std::vector<VkDescriptorSet>& sets,
                                      const std::vector<UniformBuffer>& ubo) {
+    ASH_INFO("Creating descriptor sets");
     std::vector<VkDescriptorSetLayout> layouts(swapchainImages.size(),
                                                descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -835,6 +847,7 @@ void VulkanAPI::createDescriptorSets(std::vector<VkDescriptorSet>& sets,
 }
 
 void VulkanAPI::createCommandPools() {
+    ASH_INFO("Creating command pool");
     QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
 
     VkCommandPoolCreateInfo poolInfo{};
@@ -869,6 +882,8 @@ uint32_t VulkanAPI::findMemoryType(uint32_t typeFilter,
 }
 
 void VulkanAPI::createCommandBuffers() {
+    ASH_INFO("Creating command buffers");
+
     commandBuffers.resize(swapchainFramebuffers.size());
 
     VkCommandBufferAllocateInfo allocInfo{};
@@ -916,37 +931,66 @@ void VulkanAPI::recordCommandBuffers() {
 
         VkDeviceSize offsets[] = {0};
 
-        //        std::shared_ptr<Scene> scene = Renderer::getScene();
+        std::shared_ptr<Scene> scene = Renderer::getScene();
+        if (scene) {
+            auto renderables = scene->registry.view<Renderable>();
 
-        //        auto renderables = scene->registry.view<Transform, Model>();
+            for (auto entity : renderables) {
+                auto& renderable = renderables.get(entity);
 
-        //        for (auto entity : renderables) {
-        //        }
+                Mesh& mesh = Renderer::getMesh(renderable.mesh);
+                VkBuffer vb[] = {mesh.ivb.buffer};
 
-        for (auto mesh : batch) {
-            VkBuffer vb[] = {mesh.second.ivb.buffer};
+                // Each model has their own mesh and thus their own vertex and
+                // index buffers
+                vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vb, offsets);
 
-            // Each model has their own mesh and thus their own vertex and index
-            // buffers
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vb, offsets);
+                vkCmdBindIndexBuffer(commandBuffers[i], mesh.ivb.buffer,
+                                     mesh.ivb.vertSize, VK_INDEX_TYPE_UINT32);
 
-            vkCmdBindIndexBuffer(commandBuffers[i], mesh.second.ivb.buffer,
-                                 mesh.second.ivb.vertSize,
-                                 VK_INDEX_TYPE_UINT32);
+                // vkUpdateDescriptorSets ? look up if this is slow/fast
+                // otherwise use unique descriptor sets for every entity - seems
+                // wasteful
 
-            // vkUpdateDescriptorSets ? look up if this is slow/fast
-            // otherwise use unique descriptor sets for every entity - seems
-            // wasteful
+                // Each entity has their own transform and thus their own
+                // UBO transform matrix
+                ASH_INFO("Using descriptor set {}", i);
+                vkCmdBindDescriptorSets(
+                    commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    pipelineLayout, 0, 1, &renderable.descriptorSets[i], 0,
+                    nullptr);
 
-            // Each entity has their own transform and thus their own
-            // UBO transform matrix
-            vkCmdBindDescriptorSets(
-                commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
-
-            vkCmdDrawIndexed(commandBuffers[i], mesh.second.ivb.numIndices, 1,
-                             0, 0, 0);
+                vkCmdDrawIndexed(commandBuffers[i], mesh.ivb.numIndices, 1, 0,
+                                 0, 0);
+            }
         }
+
+        // for (auto mesh : batch) {
+        //     VkBuffer vb[] = {mesh.second.ivb.buffer};
+
+        //     // Each model has their own mesh and thus their own vertex and
+        //     index
+        //     // buffers
+        //     vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vb, offsets);
+
+        //     vkCmdBindIndexBuffer(commandBuffers[i], mesh.second.ivb.buffer,
+        //                          mesh.second.ivb.vertSize,
+        //                          VK_INDEX_TYPE_UINT32);
+
+        //     // vkUpdateDescriptorSets ? look up if this is slow/fast
+        //     // otherwise use unique descriptor sets for every entity - seems
+        //     // wasteful
+
+        //     // Each entity has their own transform and thus their own
+        //     // UBO transform matrix
+        //     vkCmdBindDescriptorSets(
+        //         commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
+        //         pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
+
+        //     vkCmdDrawIndexed(commandBuffers[i], mesh.second.ivb.numIndices,
+        //     1,
+        //                      0, 0, 0);
+        // }
 
         vkCmdEndRenderPass(commandBuffers[i]);
 
@@ -958,6 +1002,8 @@ void VulkanAPI::recordCommandBuffers() {
 }
 
 void VulkanAPI::createSyncObjects() {
+    ASH_INFO("Creating synchronization objects");
+
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1031,6 +1077,15 @@ void VulkanAPI::recreateSwapchain() {
     createGraphicsPipelines(pipelineObjects);
     createFramebuffers();
     createDescriptorPool(MAX_DESCRIPTOR_SETS);
+
+    std::shared_ptr<Scene> scene = Renderer::getScene();
+    auto renderables = scene->registry.view<Renderable>();
+    for (auto entity : renderables) {
+        auto& renderable = renderables.get(entity);
+        createDescriptorSets(renderable.descriptorSets, renderable.ubos);
+    }
+
+    // delete
     createDescriptorSets(descriptorSets, uniformBuffers);
     createCommandBuffers();
 }
@@ -1130,8 +1185,10 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createDescriptorSetLayout();
     createGraphicsPipelines(pipelines);
     createFramebuffers();
+    // Delete
     createUniformBuffers(uniformBuffers);
     createDescriptorPool(MAX_DESCRIPTOR_SETS);
+    // Delete
     createDescriptorSets(descriptorSets, uniformBuffers);
     createCommandPools();
     createCommandBuffers();
@@ -1158,12 +1215,21 @@ void VulkanAPI::updateUniformBuffers(uint32_t currentImage) {
 
     ubo.proj[1][1] *= -1;
 
-    void* data;
-    vmaMapMemory(allocator,
-                 uniformBuffers[currentImage].uniformBufferAllocation, &data);
-    std::memcpy(data, &ubo, sizeof(ubo));
-    vmaUnmapMemory(allocator,
-                   uniformBuffers[currentImage].uniformBufferAllocation);
+    std::shared_ptr<Scene> scene = Renderer::getScene();
+    if (scene) {
+        auto renderables = scene->registry.view<Renderable>();
+        for (auto entity : renderables) {
+            auto& renderable = renderables.get(entity);
+            void* data;
+            vmaMapMemory(allocator,
+                         renderable.ubos[currentImage].uniformBufferAllocation,
+                         &data);
+            std::memcpy(data, &ubo, sizeof(ubo));
+            vmaUnmapMemory(
+                allocator,
+                renderable.ubos[currentImage].uniformBufferAllocation);
+        }
+    }
 }
 
 void VulkanAPI::render() {
@@ -1254,12 +1320,14 @@ void VulkanAPI::cleanup() {
     }
 
     std::shared_ptr<Scene> scene = Renderer::getScene();
-    auto renderables = scene->registry.view<Renderable>();
-    for (auto entity : renderables) {
-        auto& renderable = renderables.get<Renderable>(entity);
-        for (auto buffer : renderable.ubos) {
-            vmaDestroyBuffer(allocator, buffer.uniformBuffer,
-                             buffer.uniformBufferAllocation);
+    if (scene) {
+        auto renderables = scene->registry.view<Renderable>();
+        for (auto entity : renderables) {
+            auto& renderable = renderables.get<Renderable>(entity);
+            for (auto buffer : renderable.ubos) {
+                vmaDestroyBuffer(allocator, buffer.uniformBuffer,
+                                 buffer.uniformBufferAllocation);
+            }
         }
     }
 
