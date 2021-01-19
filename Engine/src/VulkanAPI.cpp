@@ -954,7 +954,6 @@ void VulkanAPI::recordCommandBuffers() {
 
                 // Each entity has their own transform and thus their own
                 // UBO transform matrix
-                ASH_INFO("Using descriptor set {}", i);
                 vkCmdBindDescriptorSets(
                     commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
                     pipelineLayout, 0, 1, &renderable.descriptorSets[i], 0,
@@ -1196,16 +1195,8 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
 }
 
 void VulkanAPI::updateUniformBuffers(uint32_t currentImage) {
-    static auto startTime = std::chrono::high_resolution_clock::now();
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(
-                     currentTime - startTime)
-                     .count();
-
     UniformBufferObject ubo{};
-    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f),
-                            glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.model = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.view =
         glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                     glm::vec3(0.0f, 0.0f, 1.0f));
@@ -1217,9 +1208,13 @@ void VulkanAPI::updateUniformBuffers(uint32_t currentImage) {
 
     std::shared_ptr<Scene> scene = Renderer::getScene();
     if (scene) {
-        auto renderables = scene->registry.view<Renderable>();
+        auto renderables = scene->registry.view<Renderable, Transform>();
         for (auto entity : renderables) {
-            auto& renderable = renderables.get(entity);
+            auto [renderable, transform] =
+                renderables.get<Renderable, Transform>(entity);
+
+            ubo.model = transform.getTransform();
+
             void* data;
             vmaMapMemory(allocator,
                          renderable.ubos[currentImage].uniformBufferAllocation,
