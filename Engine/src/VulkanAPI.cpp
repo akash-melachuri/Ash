@@ -1084,8 +1084,6 @@ void VulkanAPI::recreateSwapchain() {
         createDescriptorSets(renderable.descriptorSets, renderable.ubos);
     }
 
-    // delete
-    createDescriptorSets(descriptorSets, uniformBuffers);
     createCommandBuffers();
 }
 
@@ -1184,11 +1182,7 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createDescriptorSetLayout();
     createGraphicsPipelines(pipelines);
     createFramebuffers();
-    // Delete
-    createUniformBuffers(uniformBuffers);
     createDescriptorPool(MAX_DESCRIPTOR_SETS);
-    // Delete
-    createDescriptorSets(descriptorSets, uniformBuffers);
     createCommandPools();
     createCommandBuffers();
     createSyncObjects();
@@ -1308,11 +1302,6 @@ void VulkanAPI::cleanup() {
     vkDestroyPipelineCache(device, pipelineCache, nullptr);
 
     cleanupSwapchain();
-
-    for (auto buffer : uniformBuffers) {
-        vmaDestroyBuffer(allocator, buffer.uniformBuffer,
-                         buffer.uniformBufferAllocation);
-    }
 
     std::shared_ptr<Scene> scene = Renderer::getScene();
     if (scene) {

@@ -128,7 +128,6 @@ class VulkanAPI {
     VkPipelineLayout pipelineLayout;
 
     VkDescriptorPool descriptorPool;
-    std::vector<VkDescriptorSet> descriptorSets;
 
     VkPipelineCache pipelineCache;
     std::string currentPipeline = "main";
@@ -138,7 +137,7 @@ class VulkanAPI {
     std::unordered_map<std::string, Mesh> batch;
 
     // When true, means command buffers need to be re-recorded because they are
-    // outdated Usually means new object/change in rendering properties e.g.
+    // outdated. Usually means new object/change in rendering properties e.g.
     // changing clear color or shaders
     bool shouldRecord = false;
     VkCommandPool commandPool;
@@ -153,8 +152,9 @@ class VulkanAPI {
 
     VmaAllocator allocator;
 
+    // Keeps track of all allocated vertex buffers in order to be freed
+    // at end of runtime
     std::vector<IndexedVertexBuffer> indexedVertexBuffers;
-    std::vector<UniformBuffer> uniformBuffers;
 
     size_t currentFrame = 0;
 
