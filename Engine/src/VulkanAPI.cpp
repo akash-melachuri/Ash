@@ -151,7 +151,7 @@ VkPresentModeKHR VulkanAPI::chooseSwapPresentMode(
     const std::vector<VkPresentModeKHR>& availablePresentModes) {
     for (const auto& availablePresentMode : availablePresentModes) {
         // vsync : VK_PRESENT_MODE_MAILBOX_KHR
-        if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
+        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
             return availablePresentMode;
     }
     return VK_PRESENT_MODE_FIFO_KHR;
@@ -279,7 +279,7 @@ void VulkanAPI::createInstance() {
     appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
     appInfo.pEngineName = "Ash";
     appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 1);
-    appInfo.apiVersion = VK_API_VERSION_1_2;
+    appInfo.apiVersion = VULKAN_VERSION;
 
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -382,7 +382,7 @@ void VulkanAPI::createLogicalDevice() {
 
 void VulkanAPI::createAllocator() {
     VmaAllocatorCreateInfo allocInfo{};
-    allocInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+    allocInfo.vulkanApiVersion = VULKAN_VERSION;
     allocInfo.device = device;
     allocInfo.physicalDevice = physicalDevice;
     allocInfo.instance = instance;
@@ -597,24 +597,12 @@ void VulkanAPI::createGraphicsPipelines(
     inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float)swapchainExtent.width;
-    viewport.height = (float)swapchainExtent.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-
-    VkRect2D scissor{};
-    scissor.offset = {0, 0};
-    scissor.extent = swapchainExtent;
-
     VkPipelineViewportStateCreateInfo viewportState{};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
     viewportState.viewportCount = 1;
-    viewportState.pViewports = &viewport;
+    viewportState.pViewports = nullptr;
     viewportState.scissorCount = 1;
-    viewportState.pScissors = &scissor;
+    viewportState.pScissors = nullptr;
 
     VkPipelineRasterizationStateCreateInfo rasterizer{};
     rasterizer.sType =
@@ -661,14 +649,13 @@ void VulkanAPI::createGraphicsPipelines(
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
 
-    // VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT,
-    // VK_DYNAMIC_STATE_LINE_WIDTH};
+    VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT,
+                                      VK_DYNAMIC_STATE_SCISSOR};
 
-    // VkPipelineDynamicStateCreateInfo dynamicState{};
-    // dynamicState.sType =
-    // VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    // dynamicState.dynamicStateCount = 2;
-    // dynamicState.pDynamicStates = dynamicStates;
+    VkPipelineDynamicStateCreateInfo dynamicState{};
+    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicState.dynamicStateCount = 2;
+    dynamicState.pDynamicStates = dynamicStates;
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -693,7 +680,7 @@ void VulkanAPI::createGraphicsPipelines(
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pDepthStencilState = nullptr;
     pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.pDynamicState = nullptr;
+    pipelineInfo.pDynamicState = &dynamicState;
 
     pipelineInfo.layout = pipelineLayout;
 
@@ -925,9 +912,20 @@ void VulkanAPI::recordCommandBuffers() {
         vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo,
                              VK_SUBPASS_CONTENTS_INLINE);
 
-        // Each model should have their own pipeline
-        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          graphicsPipelines[currentPipeline]);
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = (float)swapchainExtent.width;
+        viewport.height = (float)swapchainExtent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+
+        VkRect2D scissor{};
+        scissor.offset = {0, 0};
+        scissor.extent = swapchainExtent;
+
+        vkCmdSetViewport(commandBuffers[i], 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffers[i], 0, 1, &scissor);
 
         VkDeviceSize offsets[] = {0};
 
@@ -941,16 +939,17 @@ void VulkanAPI::recordCommandBuffers() {
                 Mesh& mesh = Renderer::getMesh(renderable.mesh);
                 VkBuffer vb[] = {mesh.ivb.buffer};
 
+                // Each model should have their own pipeline
+                vkCmdBindPipeline(commandBuffers[i],
+                                  VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                  graphicsPipelines[renderable.pipeline]);
+
                 // Each model has their own mesh and thus their own vertex and
                 // index buffers
                 vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vb, offsets);
 
                 vkCmdBindIndexBuffer(commandBuffers[i], mesh.ivb.buffer,
                                      mesh.ivb.vertSize, VK_INDEX_TYPE_UINT32);
-
-                // vkUpdateDescriptorSets ? look up if this is slow/fast
-                // otherwise use unique descriptor sets for every entity - seems
-                // wasteful
 
                 // Each entity has their own transform and thus their own
                 // UBO transform matrix
@@ -963,33 +962,6 @@ void VulkanAPI::recordCommandBuffers() {
                                  0, 0);
             }
         }
-
-        // for (auto mesh : batch) {
-        //     VkBuffer vb[] = {mesh.second.ivb.buffer};
-
-        //     // Each model has their own mesh and thus their own vertex and
-        //     index
-        //     // buffers
-        //     vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vb, offsets);
-
-        //     vkCmdBindIndexBuffer(commandBuffers[i], mesh.second.ivb.buffer,
-        //                          mesh.second.ivb.vertSize,
-        //                          VK_INDEX_TYPE_UINT32);
-
-        //     // vkUpdateDescriptorSets ? look up if this is slow/fast
-        //     // otherwise use unique descriptor sets for every entity - seems
-        //     // wasteful
-
-        //     // Each entity has their own transform and thus their own
-        //     // UBO transform matrix
-        //     vkCmdBindDescriptorSets(
-        //         commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-        //         pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
-
-        //     vkCmdDrawIndexed(commandBuffers[i], mesh.second.ivb.numIndices,
-        //     1,
-        //                      0, 0, 0);
-        // }
 
         vkCmdEndRenderPass(commandBuffers[i]);
 
@@ -1042,10 +1014,6 @@ void VulkanAPI::cleanupSwapchain() {
                          static_cast<uint32_t>(commandBuffers.size()),
                          commandBuffers.data());
 
-    for (auto pipeline : graphicsPipelines)
-        vkDestroyPipeline(device, pipeline.second, nullptr);
-
-    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
     vkDestroyRenderPass(device, renderPass, nullptr);
 
     for (auto imageView : swapchainImageViews)
@@ -1073,7 +1041,6 @@ void VulkanAPI::recreateSwapchain() {
     createSwapchain();
     createImageViews();
     createRenderPass();
-    createGraphicsPipelines(pipelineObjects);
     createFramebuffers();
     createDescriptorPool(MAX_DESCRIPTOR_SETS);
 
@@ -1302,6 +1269,11 @@ void VulkanAPI::cleanup() {
     vkDestroyPipelineCache(device, pipelineCache, nullptr);
 
     cleanupSwapchain();
+
+    for (auto pipeline : graphicsPipelines)
+        vkDestroyPipeline(device, pipeline.second, nullptr);
+
+    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 
     std::shared_ptr<Scene> scene = Renderer::getScene();
     if (scene) {

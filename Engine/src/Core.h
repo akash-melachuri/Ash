@@ -37,14 +37,12 @@
     {                                      \
         if (!(x)) {                        \
             ASH_ERROR("{0}", __VA_ARGS__); \
-            throw std::runtime_error("");  \
         }                                  \
     }
 #define APP_ASSERT(x, ...)                 \
     {                                      \
         if (!(x)) {                        \
             APP_ERROR("{0}", __VA_ARGS__); \
-            throw std::runtime_error("");  \
         }                                  \
     }
 #endif
