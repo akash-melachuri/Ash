@@ -2,9 +2,6 @@
 
 #include <fstream>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
 #include "Core.h"
 
 namespace Ash::Helper {

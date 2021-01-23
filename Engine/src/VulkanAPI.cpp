@@ -4,6 +4,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include <chrono>
 
 #include "App.h"
@@ -1123,6 +1126,16 @@ VkShaderModule VulkanAPI::createShaderModule(const std::vector<char>& code) {
                "Failed to create shader module");
 
     return module;
+}
+
+void VulkanAPI::createTextureImage() {
+    int texWidth, texHeight, texChannels;
+    stbi_uc* pixels = stbi_load("assets/textures/texture.jpg", &texWidth,
+                                &texHeight, &texChannels, STBI_rgb_alpha);
+
+    VkDeviceSize imageSize = texWidth * texHeight * 4;
+
+    ASH_ASSERT(pixels, "Failed to load image from disk");
 }
 
 void VulkanAPI::createSurface() {
