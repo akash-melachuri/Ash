@@ -1136,6 +1136,20 @@ void VulkanAPI::createTextureImage() {
     VkDeviceSize imageSize = texWidth * texHeight * 4;
 
     ASH_ASSERT(pixels, "Failed to load image from disk");
+
+    VkBuffer stagingBuffer;
+    VmaAllocation stagingBufferAllocation;
+
+    createBuffer(imageSize, VMA_MEMORY_USAGE_CPU_ONLY,
+                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBuffer,
+                 stagingBufferAllocation);
+
+    void* data;
+    vmaMapMemory(allocator, stagingBufferAllocation, &data);
+    std::memcpy(data, pixels, static_cast<size_t>(imageSize));
+    vmaUnmapMemory(allocator, stagingBufferAllocation);
+
+    stbi_image_free(pixels);
 }
 
 void VulkanAPI::createSurface() {
