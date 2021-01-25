@@ -137,11 +137,15 @@ class VulkanAPI {
     std::unordered_map<std::string, VkPipeline> graphicsPipelines;
     std::vector<Pipeline> pipelineObjects;
 
+    // Delete
     std::unordered_map<std::string, Mesh> batch;
 
-    // When true, means command buffers need to be re-recorded because they are
-    // outdated. Usually means new object/change in rendering properties e.g.
-    // changing clear color or shaders
+    VkImage textureImage;
+    VmaAllocation textureImageAllocation;
+
+    // When true, means command buffers need to be re-recorded because they
+    // are outdated. Usually means new object/change in rendering properties
+    // e.g. changing clear color or shaders
     bool shouldRecord = false;
     VkCommandPool commandPool;
     VkCommandPool transferCommandPool;
