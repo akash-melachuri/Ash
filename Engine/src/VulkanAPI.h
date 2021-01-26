@@ -85,6 +85,9 @@ class VulkanAPI {
     void createBuffer(VkDeviceSize size, VmaMemoryUsage memUsage,
                       VkBufferUsageFlags usage, VkBuffer& buffer,
                       VmaAllocation& allocation);
+    void createImage(uint32_t width, uint32_t height, VkFormat format,
+                     VkImageTiling tiling, VkImageUsageFlags usage,
+                     VkImage& image, VmaAllocation& allocation);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     void updateUniformBuffers(uint32_t currentImage);
     void createTextureImage();

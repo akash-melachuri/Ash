@@ -1128,6 +1128,33 @@ VkShaderModule VulkanAPI::createShaderModule(const std::vector<char>& code) {
     return module;
 }
 
+void VulkanAPI::createImage(uint32_t width, uint32_t height,
+                            VmaMemoryUsage memUsage, VkFormat format,
+                            VkImageTiling tiling, VkImageUsageFlags usage,
+                            VkImage& image, VmaAllocation& allocation) {
+    VkImageCreateInfo imageInfo{};
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.extent.width = static_cast<uint32_t>(width);
+    imageInfo.extent.height = static_cast<uint32_t>(height);
+    imageInfo.extent.depth = 1;
+    imageInfo.mipLevels = 1;
+    imageInfo.arrayLayers = 1;
+    imageInfo.format = format;
+    imageInfo.tiling = tiling;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage = usage;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+
+    VmaAllocationCreateInfo allocCreateInfo{};
+    allocCreateInfo.usage = memUsage;
+
+    ASH_ASSERT(vmaCreateImage(allocator, &imageInfo, &allocCreateInfo, &image,
+                              &allocation, nullptr) == VK_SUCCESS,
+               "Failed to create device image");
+}
+
 void VulkanAPI::createTextureImage() {
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load("assets/textures/texture.jpg", &texWidth,
@@ -1151,25 +1178,10 @@ void VulkanAPI::createTextureImage() {
 
     stbi_image_free(pixels);
 
-    VkImageCreateInfo imageInfo{};
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = static_cast<uint32_t>(texWidth);
-    imageInfo.extent.height = static_cast<uint32_t>(texHeight);
-    imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = 1;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
-    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage =
-        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-
-    ASH_ASSERT(
-        vkCreateImage(device, &imageInfo, nullptr, &textureImage) == VK_SUCCESS,
-        "Failed to create device image");
+    createImage(texWidth, texHeight, VMA_MEMORY_USAGE_GPU_ONLY,
+                VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                textureImage, textureImageAllocation);
 }
 
 void VulkanAPI::createSurface() {
@@ -1199,6 +1211,7 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createDescriptorPool(MAX_DESCRIPTOR_SETS);
     createCommandPools();
     createCommandBuffers();
+    createTextureImage();
     createSyncObjects();
 }
 
