@@ -94,6 +94,9 @@ class VulkanAPI {
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     void updateUniformBuffers(uint32_t currentImage);
     void createTextureImage();
+    void transitionImageLayout(VkImage image, VkFormat format,
+                               VkImageLayout oldLayout,
+                               VkImageLayout newLayout);
 
     SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
