@@ -92,6 +92,8 @@ class VulkanAPI {
                      VkImageUsageFlags usage, VkImage& image,
                      VmaAllocation& allocation);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
+                           uint32_t height);
     void updateUniformBuffers(uint32_t currentImage);
     void createTextureImage();
     void transitionImageLayout(VkImage image, VkFormat format,
