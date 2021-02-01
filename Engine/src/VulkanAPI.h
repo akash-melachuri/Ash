@@ -91,11 +91,13 @@ class VulkanAPI {
                      VkFormat format, VkImageTiling tiling,
                      VkImageUsageFlags usage, VkImage& image,
                      VmaAllocation& allocation);
+    VkImageView createImageView(VkImage image, VkFormat format);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
                            uint32_t height);
     void updateUniformBuffers(uint32_t currentImage);
     void createTextureImage();
+    void createTextureImageView();
     void transitionImageLayout(VkImage image, VkFormat format,
                                VkImageLayout oldLayout,
                                VkImageLayout newLayout);
@@ -153,6 +155,7 @@ class VulkanAPI {
 
     VkImage textureImage;
     VmaAllocation textureImageAllocation;
+    VkImageView textureImageView;
 
     // When true, means command buffers need to be re-recorded because they
     // are outdated. Usually means new object/change in rendering properties

@@ -489,24 +489,8 @@ void VulkanAPI::createImageViews() {
     ASH_INFO("Creating image views");
     swapchainImageViews.resize(swapchainImages.size());
     for (size_t i = 0; i < swapchainImages.size(); i++) {
-        VkImageViewCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        createInfo.image = swapchainImages[i];
-        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        createInfo.format = swapchainImageFormat;
-        createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        createInfo.subresourceRange.baseMipLevel = 0;
-        createInfo.subresourceRange.levelCount = 1;
-        createInfo.subresourceRange.baseArrayLayer = 0;
-        createInfo.subresourceRange.layerCount = 1;
-
-        ASH_ASSERT(vkCreateImageView(device, &createInfo, nullptr,
-                                     &swapchainImageViews[i]) == VK_SUCCESS,
-                   "Failed to create swapchain image view {}", i);
+        swapchainImageViews[i] =
+            createImageView(swapchainImages[i], swapchainImageFormat);
     }
 }
 
@@ -1222,8 +1206,8 @@ void VulkanAPI::transitionImageLayout(VkImage image, VkFormat format,
         ASH_ASSERT(false, "Unsupported image layout transition");
     }
 
-    vkCmdPipelineBarrier(commandBuffer, 0, 0, 0, 0, nullptr, 0, nullptr, 1,
-                         &barrier);
+    vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0,
+                         nullptr, 0, nullptr, 1, &barrier);
 
     endSingleTimeCommands(commandBuffer);
 }
@@ -1269,6 +1253,29 @@ void VulkanAPI::createTextureImage() {
     vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
 }
 
+VkImageView VulkanAPI::createImageView(VkImage image, VkFormat format) {
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = image;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = format;
+    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 1;
+
+    VkImageView imageView;
+    ASH_ASSERT(
+        vkCreateImageView(device, &viewInfo, nullptr, &imageView) == VK_SUCCESS,
+        "Failed to create image view");
+    return imageView;
+}
+
+void VulkanAPI::createTextureImageView() {
+    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB);
+}
+
 void VulkanAPI::createSurface() {
     GLFWwindow* window = Ash::App::getWindow()->get();
     VkResult result =
@@ -1296,7 +1303,7 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createDescriptorPool(MAX_DESCRIPTOR_SETS);
     createCommandPools();
     createCommandBuffers();
-    // createTextureImage();
+    createTextureImage();
     createSyncObjects();
 }
 
@@ -1414,6 +1421,8 @@ void VulkanAPI::cleanup() {
     vkDestroyPipelineCache(device, pipelineCache, nullptr);
 
     cleanupSwapchain();
+
+    vkDestroyImageView(device, textureImageView, nullptr);
 
     vmaDestroyImage(allocator, textureImage, textureImageAllocation);
 
