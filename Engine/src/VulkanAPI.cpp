@@ -274,7 +274,11 @@ bool VulkanAPI::isDeviceSuitable(VkPhysicalDevice device) {
                             !swapChainSupport.presentModes.empty();
     }
 
-    return indices.isComplete() && extensionsSupported && swapChainAdequate;
+    VkPhysicalDeviceFeatures supportedFeatures;
+    vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+
+    return indices.isComplete() && extensionsSupported && swapChainAdequate &&
+           supportedFeatures.samplerAnisotropy;
 }
 
 void VulkanAPI::pickPhysicalDevice() {
@@ -388,6 +392,7 @@ void VulkanAPI::createLogicalDevice() {
     }
 
     VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -1276,6 +1281,34 @@ void VulkanAPI::createTextureImageView() {
     textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB);
 }
 
+void VulkanAPI::createTextureSampler() {
+    VkSamplerCreateInfo samplerInfo{};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.anisotropyEnable = VK_TRUE;
+
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerInfo.compareEnable = VK_FALSE;
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.mipLodBias = 0.0f;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = 0.0f;
+
+    ASH_ASSERT(vkCreateSampler(device, &samplerInfo, nullptr,
+                               &textureSampler) == VK_SUCCESS,
+               "Failed to create texture sampler");
+}
+
 void VulkanAPI::createSurface() {
     GLFWwindow* window = Ash::App::getWindow()->get();
     VkResult result =
@@ -1304,6 +1337,8 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createCommandPools();
     createCommandBuffers();
     createTextureImage();
+    createTextureImageView();
+    createTextureSampler();
     createSyncObjects();
 }
 
@@ -1422,8 +1457,8 @@ void VulkanAPI::cleanup() {
 
     cleanupSwapchain();
 
+    vkDestroySampler(device, textureSampler, nullptr);
     vkDestroyImageView(device, textureImageView, nullptr);
-
     vmaDestroyImage(allocator, textureImage, textureImageAllocation);
 
     for (auto pipeline : graphicsPipelines)

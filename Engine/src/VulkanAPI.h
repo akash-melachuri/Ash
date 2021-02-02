@@ -98,6 +98,7 @@ class VulkanAPI {
     void updateUniformBuffers(uint32_t currentImage);
     void createTextureImage();
     void createTextureImageView();
+    void createTextureSampler();
     void transitionImageLayout(VkImage image, VkFormat format,
                                VkImageLayout oldLayout,
                                VkImageLayout newLayout);
@@ -156,6 +157,7 @@ class VulkanAPI {
     VkImage textureImage;
     VmaAllocation textureImageAllocation;
     VkImageView textureImageView;
+    VkSampler textureSampler;
 
     // When true, means command buffers need to be re-recorded because they
     // are outdated. Usually means new object/change in rendering properties
