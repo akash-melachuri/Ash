@@ -4,7 +4,6 @@ namespace Ash {
 
 std::shared_ptr<VulkanAPI> Renderer::api = std::make_shared<VulkanAPI>();
 std::vector<Pipeline> Renderer::pipelines;
-std::unordered_map<std::string, Mesh> Renderer::batch;
 std::unordered_map<std::string, Mesh> Renderer::meshes;
 std::shared_ptr<Scene> Renderer::scene;
 
@@ -18,19 +17,6 @@ void Renderer::loadMesh(const std::string& name,
                         const std::vector<Vertex>& verts,
                         const std::vector<uint32_t>& indices) {
     meshes[name] = {name, createIndexedVertexBuffer(verts, indices)};
-}
-
-void Renderer::queueMesh(const std::string& name) {
-    ASH_ASSERT(meshes.count(name) == 1,
-               "Failed to find mesh with name {} in loaded meshes", name);
-
-    batch[name] = meshes[name];
-    api->submitBatch(batch);
-}
-
-void Renderer::dequeueMesh(const std::string& name) {
-    batch.erase(name);
-    api->submitBatch(batch);
 }
 
 void Renderer::init() { api->init(pipelines); }
@@ -50,8 +36,6 @@ void Renderer::setClearColor(const glm::vec4& clearColor) {
 
 void Renderer::setScene(std::shared_ptr<Scene> scene) {
     Renderer::scene = scene;
-    // TODO: API queue Scene method which will take in a scene object and record
-    // command buffers to render the scene's renderable entities
     api->signalRecord();
 }
 

@@ -29,13 +29,6 @@ class Renderer {
 
     static Mesh& getMesh(const std::string& name) { return meshes[name]; }
 
-    // change to queueEntity and dequeueEntity
-    // OR BETTER just render all entities with Renderable component and whether
-    // they are visible or not by adding them appropriately to the batch if
-    // they're supposed to be rendered
-    static void queueMesh(const std::string& name);
-    static void dequeueMesh(const std::string& name);
-
     static void init();
     static void render();
     static void cleanup();
@@ -53,10 +46,6 @@ class Renderer {
     static std::vector<Pipeline> pipelines;
 
     static std::shared_ptr<Scene> scene;
-
-    // TODO: Change to <std::string (mesh names), std::vector<Entity>> for
-    // better batch rendering
-    static std::unordered_map<std::string, Mesh> batch;
 
     static std::unordered_map<std::string, Mesh> meshes;
 };
