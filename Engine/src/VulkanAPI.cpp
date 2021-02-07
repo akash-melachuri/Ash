@@ -1550,21 +1550,8 @@ void VulkanAPI::updateCommandBuffers() {
  *
  */
 
-void VulkanAPI::setPipeline(std::string name) {
-    currentPipeline = name;
-
-    shouldRecord = true;
-}
-
 void VulkanAPI::setClearColor(const glm::vec4& color) {
     clearColor = color;
-
-    shouldRecord = true;
-}
-
-void VulkanAPI::submitBatch(
-    const std::unordered_map<std::string, Mesh>& batch) {
-    this->batch = batch;
 
     shouldRecord = true;
 }

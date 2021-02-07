@@ -18,10 +18,6 @@ class Renderer {
     ~Renderer();
 
     static void loadPipeline(const Pipeline& pipeline);
-    static void setPipeline(const std::string& name);
-
-    static IndexedVertexBuffer createIndexedVertexBuffer(
-        const std::vector<Vertex>& verts, const std::vector<uint32_t>& indices);
 
     static void loadMesh(const std::string& name,
                          const std::vector<Vertex>& verts,

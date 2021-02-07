@@ -11,12 +11,10 @@ void Renderer::loadPipeline(const Pipeline& pipeline) {
     pipelines.push_back(pipeline);
 }
 
-void Renderer::setPipeline(const std::string& name) { api->setPipeline(name); }
-
 void Renderer::loadMesh(const std::string& name,
                         const std::vector<Vertex>& verts,
                         const std::vector<uint32_t>& indices) {
-    meshes[name] = {name, createIndexedVertexBuffer(verts, indices)};
+    meshes[name] = {name, api->createIndexedVertexArray(verts, indices)};
 }
 
 void Renderer::init() { api->init(pipelines); }
@@ -24,11 +22,6 @@ void Renderer::init() { api->init(pipelines); }
 void Renderer::render() { api->render(); }
 
 void Renderer::cleanup() { api->cleanup(); }
-
-IndexedVertexBuffer Renderer::createIndexedVertexBuffer(
-    const std::vector<Vertex>& verts, const std::vector<uint32_t>& indices) {
-    return api->createIndexedVertexArray(verts, indices);
-}
 
 void Renderer::setClearColor(const glm::vec4& clearColor) {
     api->setClearColor(clearColor);

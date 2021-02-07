@@ -33,10 +33,7 @@ class VulkanAPI {
     void cleanup();
 
     void setClearColor(const glm::vec4& color);
-    void setPipeline(std::string name);
     void inline signalRecord() { shouldRecord = true; }
-
-    void submitBatch(const std::unordered_map<std::string, Mesh>& batch);
 
     IndexedVertexBuffer createIndexedVertexArray(
         const std::vector<Vertex>& verts, const std::vector<uint32_t>& indices);
@@ -147,7 +144,6 @@ class VulkanAPI {
     VkDescriptorPool descriptorPool;
 
     VkPipelineCache pipelineCache;
-    std::string currentPipeline = "main";
     std::unordered_map<std::string, VkPipeline> graphicsPipelines;
     std::vector<Pipeline> pipelineObjects;
 
