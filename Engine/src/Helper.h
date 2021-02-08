@@ -72,6 +72,14 @@ struct Mesh {
     IndexedVertexBuffer ivb;
 };
 
+struct Texture {
+    std::string name;
+
+    VkImage image;
+    VmaAllocation imageAllocation;
+    VkImageView imageView;
+};
+
 namespace Helper {
 
 std::vector<char> readBinaryFile(const char* filename);

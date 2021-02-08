@@ -861,7 +861,7 @@ void VulkanAPI::createDescriptorSets(std::vector<VkDescriptorSet>& sets,
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = textureImageView;
+        imageInfo.imageView = texture.imageView;
         imageInfo.sampler = textureSampler;
 
         std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
@@ -1249,10 +1249,10 @@ void VulkanAPI::transitionImageLayout(VkImage image, VkFormat format,
     endSingleTimeCommands(commandBuffer);
 }
 
-void VulkanAPI::createTextureImage() {
+void VulkanAPI::createTextureImage(const std::string& path, Texture& texture) {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load("assets/textures/texture.jpg", &texWidth,
-                                &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight,
+                                &texChannels, STBI_rgb_alpha);
 
     VkDeviceSize imageSize = texWidth * texHeight * 4;
 
@@ -1275,15 +1275,15 @@ void VulkanAPI::createTextureImage() {
     createImage(texWidth, texHeight, VMA_MEMORY_USAGE_GPU_ONLY,
                 VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                textureImage, textureImageAllocation);
+                texture.image, texture.imageAllocation);
 
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB,
+    transitionImageLayout(texture.image, VK_FORMAT_R8G8B8A8_SRGB,
                           VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    copyBufferToImage(stagingBuffer, textureImage,
+    copyBufferToImage(stagingBuffer, texture.image,
                       static_cast<uint32_t>(texWidth),
                       static_cast<uint32_t>(texHeight));
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB,
+    transitionImageLayout(texture.image, VK_FORMAT_R8G8B8A8_SRGB,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
@@ -1309,8 +1309,8 @@ VkImageView VulkanAPI::createImageView(VkImage image, VkFormat format) {
     return imageView;
 }
 
-void VulkanAPI::createTextureImageView() {
-    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB);
+void VulkanAPI::createTextureImageView(Texture& texture) {
+    texture.imageView = createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
 }
 
 void VulkanAPI::createTextureSampler() {
@@ -1368,8 +1368,8 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createDescriptorPool(MAX_DESCRIPTOR_SETS);
     createCommandPools();
     createCommandBuffers();
-    createTextureImage();
-    createTextureImageView();
+    createTextureImage("assets/textures/texture.jpg", texture);
+    createTextureImageView(texture);
     createTextureSampler();
     createSyncObjects();
 }
@@ -1490,8 +1490,8 @@ void VulkanAPI::cleanup() {
     cleanupSwapchain();
 
     vkDestroySampler(device, textureSampler, nullptr);
-    vkDestroyImageView(device, textureImageView, nullptr);
-    vmaDestroyImage(allocator, textureImage, textureImageAllocation);
+    vkDestroyImageView(device, texture.imageView, nullptr);
+    vmaDestroyImage(allocator, texture.image, texture.imageAllocation);
 
     for (auto pipeline : graphicsPipelines)
         vkDestroyPipeline(device, pipeline.second, nullptr);

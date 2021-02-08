@@ -6,6 +6,7 @@ std::shared_ptr<VulkanAPI> Renderer::api = std::make_shared<VulkanAPI>();
 std::vector<Pipeline> Renderer::pipelines;
 std::unordered_map<std::string, Mesh> Renderer::meshes;
 std::shared_ptr<Scene> Renderer::scene;
+std::unordered_map<std::string, Texture> Renderer::textures;
 
 void Renderer::loadPipeline(const Pipeline& pipeline) {
     pipelines.push_back(pipeline);

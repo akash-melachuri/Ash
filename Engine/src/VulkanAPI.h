@@ -93,8 +93,8 @@ class VulkanAPI {
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
                            uint32_t height);
     void updateUniformBuffers(uint32_t currentImage);
-    void createTextureImage();
-    void createTextureImageView();
+    void createTextureImage(const std::string& path, Texture& texture);
+    void createTextureImageView(Texture& texture);
     void createTextureSampler();
     void transitionImageLayout(VkImage image, VkFormat format,
                                VkImageLayout oldLayout,
@@ -150,9 +150,7 @@ class VulkanAPI {
     // Delete
     std::unordered_map<std::string, Mesh> batch;
 
-    VkImage textureImage;
-    VmaAllocation textureImageAllocation;
-    VkImageView textureImageView;
+    Texture texture{};
     VkSampler textureSampler;
 
     // When true, means command buffers need to be re-recorded because they
