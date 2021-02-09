@@ -29,15 +29,15 @@ struct Bob {
 void GameLayer::init() {
     scene = std::make_shared<Scene>();
     Renderer::loadMesh("Quad", vertices, indices);
-    // Renderer::queueMesh("Mesh");
+    Renderer::loadTexture("statue", "assets/textures/texture.jpg");
 
     Entity e = scene->spawn();
-    scene->addComponent<Renderable>(e, "Quad", "main");
+    scene->addComponent<Renderable>(e, "Quad", "main", "statue");
     scene->addComponent<Transform>(e, glm::vec3{0.0f, 0.0f, 0.0f});
     scene->addComponent<Spin>(e);
 
     Entity e2 = scene->spawn();
-    scene->addComponent<Renderable>(e2, "Quad", "main");
+    scene->addComponent<Renderable>(e2, "Quad", "main", "statue");
     scene->addComponent<Transform>(e2, glm::vec3{0.0f, 0.0f, 0.0f});
     scene->addComponent<Bob>(e2);
 

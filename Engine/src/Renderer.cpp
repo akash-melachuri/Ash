@@ -18,6 +18,10 @@ void Renderer::loadMesh(const std::string& name,
     meshes[name] = {name, api->createIndexedVertexArray(verts, indices)};
 }
 
+void Renderer::loadTexture(const std::string& name, const std::string& path) {
+    api->createTextureImage(path, textures[name]);
+}
+
 void Renderer::init() { api->init(pipelines); }
 
 void Renderer::render() { api->render(); }

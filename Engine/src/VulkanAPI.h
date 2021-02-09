@@ -3,6 +3,7 @@
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
 
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
@@ -38,8 +39,11 @@ class VulkanAPI {
     IndexedVertexBuffer createIndexedVertexArray(
         const std::vector<Vertex>& verts, const std::vector<uint32_t>& indices);
     void createDescriptorSets(std::vector<VkDescriptorSet>& sets,
-                              const std::vector<UniformBuffer>& ubo);
+                              const std::vector<UniformBuffer>& ubo,
+                              const Texture& texture);
     void createUniformBuffers(std::vector<UniformBuffer>& ubos);
+    void createTextureImage(const std::string& path, Texture& texture);
+    void createTextureImageView(Texture& texture);
 
    private:
     struct QueueFamilyIndices {
@@ -93,8 +97,6 @@ class VulkanAPI {
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
                            uint32_t height);
     void updateUniformBuffers(uint32_t currentImage);
-    void createTextureImage(const std::string& path, Texture& texture);
-    void createTextureImageView(Texture& texture);
     void createTextureSampler();
     void transitionImageLayout(VkImage image, VkFormat format,
                                VkImageLayout oldLayout,
@@ -150,7 +152,6 @@ class VulkanAPI {
     // Delete
     std::unordered_map<std::string, Mesh> batch;
 
-    Texture texture{};
     VkSampler textureSampler;
 
     // When true, means command buffers need to be re-recorded because they
@@ -169,9 +170,10 @@ class VulkanAPI {
 
     VmaAllocator allocator;
 
-    // Keeps track of all allocated vertex buffers in order to be freed
+    // Keeps track of all allocations in order to be freed
     // at end of runtime
     std::vector<IndexedVertexBuffer> indexedVertexBuffers;
+    std::vector<Texture> textures;
 
     size_t currentFrame = 0;
 

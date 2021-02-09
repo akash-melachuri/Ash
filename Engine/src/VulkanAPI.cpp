@@ -836,8 +836,10 @@ void VulkanAPI::createDescriptorPool(uint32_t maxSets) {
                "Failed to create descriptor pool");
 }
 
+// TODO Add texture parameter
 void VulkanAPI::createDescriptorSets(std::vector<VkDescriptorSet>& sets,
-                                     const std::vector<UniformBuffer>& ubo) {
+                                     const std::vector<UniformBuffer>& ubo,
+                                     const Texture& texture) {
     ASH_INFO("Creating descriptor sets");
     std::vector<VkDescriptorSetLayout> layouts(swapchainImages.size(),
                                                descriptorSetLayout);
@@ -1104,7 +1106,8 @@ void VulkanAPI::recreateSwapchain() {
     auto renderables = scene->registry.view<Renderable>();
     for (auto entity : renderables) {
         auto& renderable = renderables.get(entity);
-        createDescriptorSets(renderable.descriptorSets, renderable.ubos);
+        createDescriptorSets(renderable.descriptorSets, renderable.ubos,
+                             Renderer::getTexture(renderable.texture));
     }
 
     createCommandBuffers();
@@ -1288,6 +1291,10 @@ void VulkanAPI::createTextureImage(const std::string& path, Texture& texture) {
                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
+
+    createTextureImageView(texture);
+
+    textures.push_back(texture);
 }
 
 VkImageView VulkanAPI::createImageView(VkImage image, VkFormat format) {
@@ -1368,8 +1375,6 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createDescriptorPool(MAX_DESCRIPTOR_SETS);
     createCommandPools();
     createCommandBuffers();
-    createTextureImage("assets/textures/texture.jpg", texture);
-    createTextureImageView(texture);
     createTextureSampler();
     createSyncObjects();
 }
@@ -1490,8 +1495,11 @@ void VulkanAPI::cleanup() {
     cleanupSwapchain();
 
     vkDestroySampler(device, textureSampler, nullptr);
-    vkDestroyImageView(device, texture.imageView, nullptr);
-    vmaDestroyImage(allocator, texture.image, texture.imageAllocation);
+
+    for (auto texture : textures) {
+        vkDestroyImageView(device, texture.imageView, nullptr);
+        vmaDestroyImage(allocator, texture.image, texture.imageAllocation);
+    }
 
     for (auto pipeline : graphicsPipelines)
         vkDestroyPipeline(device, pipeline.second, nullptr);
