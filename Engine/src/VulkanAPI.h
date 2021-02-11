@@ -85,6 +85,11 @@ class VulkanAPI {
     void cleanupSwapchain();
     void recreateSwapchain();
     void updateCommandBuffers();
+    VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates,
+                                 VkImageTiling tiling,
+                                 VkFormatFeatureFlags features);
+    VkFormat findDepthFormat();
+    void createDepthResources();
     void createBuffer(VkDeviceSize size, VmaMemoryUsage memUsage,
                       VkBufferUsageFlags usage, VkBuffer& buffer,
                       VmaAllocation& allocation);
@@ -137,6 +142,9 @@ class VulkanAPI {
     std::vector<VkImage> swapchainImages;
     std::vector<VkImageView> swapchainImageViews;
     std::vector<VkFramebuffer> swapchainFramebuffers;
+
+    VkImage depthImage;
+    VmaAllocation depthImageAllocation;
 
     VkRenderPass renderPass;
 
