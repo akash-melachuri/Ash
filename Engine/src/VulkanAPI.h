@@ -88,6 +88,7 @@ class VulkanAPI {
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates,
                                  VkImageTiling tiling,
                                  VkFormatFeatureFlags features);
+    bool hasStencilComponent(VkFormat format);
     VkFormat findDepthFormat();
     void createDepthResources();
     void createBuffer(VkDeviceSize size, VmaMemoryUsage memUsage,
@@ -144,6 +145,7 @@ class VulkanAPI {
     std::vector<VkFramebuffer> swapchainFramebuffers;
 
     VkImage depthImage;
+    VkImageView depthImageView;
     VmaAllocation depthImageAllocation;
 
     VkRenderPass renderPass;

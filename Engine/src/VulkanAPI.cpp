@@ -1571,12 +1571,27 @@ VkFormat VulkanAPI::findSupportedFormat(const std::vector<VkFormat>& candidates,
     ASH_ASSERT(false, "Failed to find supported format");
 }
 
+bool VulkanAPI::hasStencilComponent(VkFormat format) {
+    return format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
+           format == VK_FORMAT_D24_UNORM_S8_UINT;
+}
+
 VkFormat VulkanAPI::findDepthFormat() {
     return findSupportedFormat(
         {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
          VK_FORMAT_D24_UNORM_S8_UINT},
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+}
+
+void VulkanAPI::createDepthResources() {
+    VkFormat depthFormat = findDepthFormat();
+
+    createImage(swapchainExtent.width, swapchainExtent.height,
+                VMA_MEMORY_USAGE_GPU_ONLY, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, depthImage,
+                depthImageAllocation);
+    depthImageView = createImageView(depthImage, depthFormat);
 }
 
 /*
