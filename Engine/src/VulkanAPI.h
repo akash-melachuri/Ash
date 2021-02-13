@@ -98,7 +98,8 @@ class VulkanAPI {
                      VkFormat format, VkImageTiling tiling,
                      VkImageUsageFlags usage, VkImage& image,
                      VmaAllocation& allocation);
-    VkImageView createImageView(VkImage image, VkFormat format);
+    VkImageView createImageView(VkImage image, VkFormat format,
+                                VkImageAspectFlags aspectFlags);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
                            uint32_t height);
