@@ -809,13 +809,15 @@ void VulkanAPI::createFramebuffers() {
     swapchainFramebuffers.resize(swapchainImageViews.size());
 
     for (size_t i = 0; i < swapchainImageViews.size(); i++) {
-        VkImageView attachments[] = {swapchainImageViews[i]};
+        std::array<VkImageView, 2> attachments = {swapchainImageViews[i],
+                                                  depthImageView};
 
         VkFramebufferCreateInfo frameBufferInfo{};
         frameBufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         frameBufferInfo.renderPass = renderPass;
-        frameBufferInfo.attachmentCount = 1;
-        frameBufferInfo.pAttachments = attachments;
+        frameBufferInfo.attachmentCount =
+            static_cast<uint32_t>(attachments.size());
+        frameBufferInfo.pAttachments = attachments.data();
         frameBufferInfo.width = swapchainExtent.width;
         frameBufferInfo.height = swapchainExtent.height;
         frameBufferInfo.layers = 1;
@@ -1416,6 +1418,7 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createPipelineCache();
     createDescriptorSetLayout();
     createGraphicsPipelines(pipelines);
+    createDepthResources();
     createFramebuffers();
     createDescriptorPool(MAX_DESCRIPTOR_SETS);
     createCommandPools();
