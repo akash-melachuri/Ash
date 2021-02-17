@@ -990,10 +990,14 @@ void VulkanAPI::recordCommandBuffers() {
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swapchainExtent;
 
-        VkClearValue clearColor = {{{this->clearColor.r, this->clearColor.g,
-                                     this->clearColor.b, this->clearColor.a}}};
-        renderPassInfo.clearValueCount = 1;
-        renderPassInfo.pClearValues = &clearColor;
+        std::array<VkClearValue, 2> clearValues{};
+        clearValues[0].color = {
+            {clearColor.r, clearColor.g, clearColor.b, clearColor.a}};
+        clearValues[1].depthStencil = {1.0f, 0};
+
+        renderPassInfo.clearValueCount =
+            static_cast<uint32_t>(clearValues.size());
+        renderPassInfo.pClearValues = clearValues.data();
 
         vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo,
                              VK_SUBPASS_CONTENTS_INLINE);
