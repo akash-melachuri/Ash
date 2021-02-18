@@ -713,6 +713,15 @@ void VulkanAPI::createGraphicsPipelines(
     VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT,
                                       VK_DYNAMIC_STATE_SCISSOR};
 
+    VkPipelineDepthStencilStateCreateInfo depthStencil{};
+    depthStencil.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStencil.depthTestEnable = VK_TRUE;
+    depthStencil.depthWriteEnable = VK_TRUE;
+    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    depthStencil.depthBoundsTestEnable = VK_FALSE;
+    depthStencil.stencilTestEnable = VK_FALSE;
+
     VkPipelineDynamicStateCreateInfo dynamicState{};
     dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dynamicState.dynamicStateCount = 2;
@@ -739,7 +748,7 @@ void VulkanAPI::createGraphicsPipelines(
     pipelineInfo.pViewportState = &viewportState;
     pipelineInfo.pRasterizationState = &rasterizer;
     pipelineInfo.pMultisampleState = &multisampling;
-    pipelineInfo.pDepthStencilState = nullptr;
+    pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
 
@@ -1422,10 +1431,10 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createPipelineCache();
     createDescriptorSetLayout();
     createGraphicsPipelines(pipelines);
-    createDepthResources();
-    createFramebuffers();
     createDescriptorPool(MAX_DESCRIPTOR_SETS);
     createCommandPools();
+    createDepthResources();
+    createFramebuffers();
     createCommandBuffers();
     createTextureSampler();
     createSyncObjects();
@@ -1552,6 +1561,9 @@ void VulkanAPI::cleanup() {
         vkDestroyImageView(device, texture.imageView, nullptr);
         vmaDestroyImage(allocator, texture.image, texture.imageAllocation);
     }
+
+    vkDestroyImageView(device, depthImageView, nullptr);
+    vmaDestroyImage(allocator, depthImage, depthImageAllocation);
 
     for (auto pipeline : graphicsPipelines)
         vkDestroyPipeline(device, pipeline.second, nullptr);
