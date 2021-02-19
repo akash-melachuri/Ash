@@ -42,6 +42,7 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(vendor/GLFW)
 add_subdirectory(vendor/spdlog)
+add_subdirectory(vendor/assimp)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
@@ -53,6 +54,7 @@ include_directories(vendor/stb_image)
 file(GLOB_RECURSE SOURCES Engine/*.cpp)
 add_library(ash ${SOURCES} vendor/VulkanMemoryAllocator/src/vk_mem_alloc.h)
 target_include_directories(ash PUBLIC vendor/VulkanMemoryAllocator/src)
+target_include_directories(ash PUBLIC vendor/assimp/include)
 target_precompile_headers(ash PRIVATE Engine/ashpch.h)
 target_compile_options(ash PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:/W4>

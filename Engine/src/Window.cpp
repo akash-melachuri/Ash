@@ -7,6 +7,8 @@ namespace Ash {
 static void framebufferResizeCallback(GLFWwindow* window, int width,
                                       int height) {
     auto w = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+    (void)width;
+    (void)height;
     w->framebufferResized = true;
 }
 
