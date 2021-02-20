@@ -73,6 +73,7 @@ target_link_libraries(ash glfw)
 target_link_libraries(ash Vulkan::Vulkan)
 target_link_libraries(ash glm::glm)
 target_link_libraries(ash spdlog)
+target_link_libraries(ash assimp)
 
 file(GLOB_RECURSE GAME_SOURCES Game/*.cpp)
 add_executable(game ${GAME_SOURCES})

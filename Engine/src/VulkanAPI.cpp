@@ -1106,6 +1106,9 @@ void VulkanAPI::createSyncObjects() {
 }
 
 void VulkanAPI::cleanupSwapchain() {
+    vkDestroyImageView(device, depthImageView, nullptr);
+    vmaDestroyImage(allocator, depthImage, depthImageAllocation);
+
     for (auto framebuffer : swapchainFramebuffers)
         vkDestroyFramebuffer(device, framebuffer, nullptr);
 
@@ -1140,6 +1143,7 @@ void VulkanAPI::recreateSwapchain() {
     createSwapchain();
     createImageViews();
     createRenderPass();
+    createDepthResources();
     createFramebuffers();
     createDescriptorPool(MAX_DESCRIPTOR_SETS);
 
@@ -1561,9 +1565,6 @@ void VulkanAPI::cleanup() {
         vkDestroyImageView(device, texture.imageView, nullptr);
         vmaDestroyImage(allocator, texture.image, texture.imageAllocation);
     }
-
-    vkDestroyImageView(device, depthImageView, nullptr);
-    vmaDestroyImage(allocator, depthImage, depthImageAllocation);
 
     for (auto pipeline : graphicsPipelines)
         vkDestroyPipeline(device, pipeline.second, nullptr);
