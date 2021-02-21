@@ -9,7 +9,6 @@
 #include <vector>
 
 namespace Ash {
-
 struct UniformBuffer {
     VkBuffer uniformBuffer;
     VmaAllocation uniformBufferAllocation;
@@ -83,6 +82,7 @@ struct Texture {
 namespace Helper {
 
 std::vector<char> readBinaryFile(const char* filename);
+bool importMesh(const std::string& file);
 
 }  // namespace Helper
 
