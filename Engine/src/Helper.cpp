@@ -24,7 +24,20 @@ std::vector<char> readBinaryFile(const char* filename) {
     return buffer;
 }
 
-bool importMesh(const std::string& file) {
+void processMesh(aiMesh* mesh, const aiScene* scene) {}
+
+void processNode(aiNode* node, const aiScene* scene) {
+    for (uint32_t i = 0; i < node->mNumMeshes; i++) {
+        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+        processMesh(mesh, scene);
+    }
+
+    for (uint32_t i = 0; i < node->mNumChildren; i++) {
+        processNode(node->mChildren[i], scene);
+    }
+}
+
+bool importModel(const std::string& file) {
     Assimp::Importer importer;
 
     const aiScene* scene = importer.ReadFile(file, aiProcess_Triangulate);
@@ -35,6 +48,8 @@ bool importMesh(const std::string& file) {
         ASH_ERROR("Failed to import mesh {}", file);
         return false;
     }
+
+    Helper::processNode(scene->mRootNode, scene);
 
     return true;
 }

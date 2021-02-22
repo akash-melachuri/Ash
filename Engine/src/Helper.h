@@ -71,6 +71,11 @@ struct Mesh {
     IndexedVertexBuffer ivb;
 };
 
+struct Model {
+    std::string name;
+    std::vector<Mesh> meshes;
+};
+
 struct Texture {
     std::string name;
 
@@ -82,7 +87,7 @@ struct Texture {
 namespace Helper {
 
 std::vector<char> readBinaryFile(const char* filename);
-bool importMesh(const std::string& file);
+bool importModel(const std::string& file);
 
 }  // namespace Helper
 

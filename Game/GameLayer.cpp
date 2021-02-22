@@ -30,7 +30,7 @@ void GameLayer::init() {
     scene = std::make_shared<Scene>();
     Renderer::loadMesh("Quad", vertices, indices);
     Renderer::loadTexture("statue", "assets/textures/texture.jpg");
-    Helper::importMesh("assets/models/viking_room/viking_room.obj");
+    Helper::importModel("assets/models/viking_room/viking_room.obj");
 
     Entity e = scene->spawn();
     scene->addComponent<Renderable>(e, "Quad", "main", "statue");
