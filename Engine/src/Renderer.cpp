@@ -7,6 +7,7 @@ std::vector<Pipeline> Renderer::pipelines;
 std::unordered_map<std::string, Mesh> Renderer::meshes;
 std::shared_ptr<Scene> Renderer::scene;
 std::unordered_map<std::string, Texture> Renderer::textures;
+std::unordered_map<std::string, Model> Renderer::models;
 
 void Renderer::loadPipeline(const Pipeline& pipeline) {
     pipelines.push_back(pipeline);

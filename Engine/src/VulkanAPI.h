@@ -160,9 +160,6 @@ class VulkanAPI {
     std::unordered_map<std::string, VkPipeline> graphicsPipelines;
     std::vector<Pipeline> pipelineObjects;
 
-    // Delete
-    std::unordered_map<std::string, Mesh> batch;
-
     VkSampler textureSampler;
 
     // When true, means command buffers need to be re-recorded because they

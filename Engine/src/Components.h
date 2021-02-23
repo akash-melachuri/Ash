@@ -32,17 +32,15 @@ struct Renderable {
     std::vector<UniformBuffer> ubos;
     std::vector<VkDescriptorSet> descriptorSets;
 
-    Renderable(const std::string& mesh, const std::string& pipeline,
-               const std::string& texture)
-        : mesh(mesh), pipeline(pipeline), texture(texture) {
+    Renderable(const std::string& model) : model(model) {
         Renderer::getAPI()->createUniformBuffers(ubos);
-        Renderer::getAPI()->createDescriptorSets(descriptorSets, ubos,
-                                                 Renderer::getTexture(texture));
+        Renderer::getAPI()->createDescriptorSets(
+            descriptorSets, ubos,
+            Renderer::getTexture(Renderer::getModel(model).textures[0]));
     }
 
-    std::string mesh;
+    std::string model;
     std::string pipeline;
-    std::string texture;
 };
 
 }  // namespace Ash

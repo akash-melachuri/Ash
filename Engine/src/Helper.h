@@ -71,17 +71,19 @@ struct Mesh {
     IndexedVertexBuffer ivb;
 };
 
-struct Model {
-    std::string name;
-    std::vector<Mesh> meshes;
-};
-
 struct Texture {
     std::string name;
 
     VkImage image;
     VmaAllocation imageAllocation;
     VkImageView imageView;
+};
+
+struct Model {
+    std::string name;
+
+    std::vector<std::string> textures;
+    std::vector<std::string> meshes;
 };
 
 namespace Helper {
