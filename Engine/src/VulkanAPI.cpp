@@ -1035,7 +1035,8 @@ void VulkanAPI::recordCommandBuffers() {
             for (auto entity : renderables) {
                 auto& renderable = renderables.get(entity);
 
-                Mesh& mesh = Renderer::getMesh(renderable.mesh);
+                Model& model = Renderer::getModel(renderable.model);
+                Mesh& mesh = Renderer::getMesh(model.meshes[0]);
                 VkBuffer vb[] = {mesh.ivb.buffer};
 
                 // Each model should have their own pipeline
@@ -1151,8 +1152,10 @@ void VulkanAPI::recreateSwapchain() {
     auto renderables = scene->registry.view<Renderable>();
     for (auto entity : renderables) {
         auto& renderable = renderables.get(entity);
-        createDescriptorSets(renderable.descriptorSets, renderable.ubos,
-                             Renderer::getTexture(renderable.texture));
+        createDescriptorSets(
+            renderable.descriptorSets, renderable.ubos,
+            Renderer::getTexture(
+                Renderer::getModel(renderable.model).textures[0]));
     }
 
     createCommandBuffers();

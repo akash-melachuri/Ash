@@ -30,15 +30,19 @@ void GameLayer::init() {
     scene = std::make_shared<Scene>();
     Renderer::loadMesh("Quad", vertices, indices);
     Renderer::loadTexture("statue", "assets/textures/texture.jpg");
+    std::vector<std::string> meshes = {"Quad"};
+    std::vector<std::string> textures = {"statue"};
+    Renderer::loadModel("Quad_statue", meshes, textures);
+
     Helper::importModel("assets/models/viking_room/viking_room.obj");
 
     Entity e = scene->spawn();
-    scene->addComponent<Renderable>(e, "Quad", "main", "statue");
+    scene->addComponent<Renderable>(e, "Quad_statue", "main");
     scene->addComponent<Transform>(e, glm::vec3{0.0f, 0.0f, 0.0f});
     scene->addComponent<Spin>(e);
 
     Entity e2 = scene->spawn();
-    scene->addComponent<Renderable>(e2, "Quad", "main", "statue");
+    scene->addComponent<Renderable>(e2, "Quad_statue", "main");
     scene->addComponent<Transform>(e2, glm::vec3{0.0f, 0.0f, 0.0f});
     scene->addComponent<Bob>(e2);
 

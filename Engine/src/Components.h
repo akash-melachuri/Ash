@@ -32,7 +32,8 @@ struct Renderable {
     std::vector<UniformBuffer> ubos;
     std::vector<VkDescriptorSet> descriptorSets;
 
-    Renderable(const std::string& model) : model(model) {
+    Renderable(const std::string& model, const std::string& pipeline)
+        : model(model), pipeline(pipeline) {
         Renderer::getAPI()->createUniformBuffers(ubos);
         Renderer::getAPI()->createDescriptorSets(
             descriptorSets, ubos,
