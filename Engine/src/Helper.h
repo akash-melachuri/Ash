@@ -82,8 +82,8 @@ struct Texture {
 struct Model {
     std::string name;
 
-    std::vector<std::string> textures;
     std::vector<std::string> meshes;
+    std::vector<std::string> textures;
 };
 
 namespace Helper {

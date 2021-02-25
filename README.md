@@ -1,5 +1,9 @@
 ### Ash (WIP)
 
+Platforms Supported (There may be bugs):
+- Windows
+- Linux
+
 Build Dependencies:
 - Vulkan SDK
     - glslc

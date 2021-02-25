@@ -9,6 +9,12 @@ std::shared_ptr<Scene> Renderer::scene;
 std::unordered_map<std::string, Texture> Renderer::textures;
 std::unordered_map<std::string, Model> Renderer::models;
 
+void Renderer::loadModel(const std::string& name,
+                         const std::vector<std::string>& meshes,
+                         const std::vector<std::string>& textures) {
+    models[name] = {name, meshes, textures};
+}
+
 void Renderer::loadPipeline(const Pipeline& pipeline) {
     pipelines.push_back(pipeline);
 }
