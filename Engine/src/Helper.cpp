@@ -24,20 +24,33 @@ std::vector<char> readBinaryFile(const char* filename) {
     return buffer;
 }
 
-void processMesh(aiMesh* mesh, const aiScene* scene) {}
+void processMesh(aiMesh* mesh, const aiScene* scene, Model& model) {
+    std::vector<glm::vec3> vertices;
+    std::vector<uint32_t> indices;
 
-void processNode(aiNode* node, const aiScene* scene) {
-    for (uint32_t i = 0; i < node->mNumMeshes; i++) {
-        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        processMesh(mesh, scene);
-    }
+    vertices.reserve(mesh->mNumVertices);
 
-    for (uint32_t i = 0; i < node->mNumChildren; i++) {
-        processNode(node->mChildren[i], scene);
+    for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
+        glm::vec3 vertex{0.0f};
+        vertex.x = mesh->mVertices[i].x;
+        vertex.y = mesh->mVertices[i].y;
+        vertex.z = mesh->mVertices[i].z;
+        vertices.push_back(vertex);
     }
 }
 
-bool importModel(const std::string& file) {
+void processNode(aiNode* node, const aiScene* scene, Model& model) {
+    for (uint32_t i = 0; i < node->mNumMeshes; i++) {
+        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+        processMesh(mesh, scene, model);
+    }
+
+    for (uint32_t i = 0; i < node->mNumChildren; i++) {
+        processNode(node->mChildren[i], scene, model);
+    }
+}
+
+bool importModel(const std::string& name, const std::string& file) {
     Assimp::Importer importer;
 
     const aiScene* scene = importer.ReadFile(file, aiProcess_Triangulate);
@@ -49,7 +62,10 @@ bool importModel(const std::string& file) {
         return false;
     }
 
-    Helper::processNode(scene->mRootNode, scene);
+    Model model = {};
+    model.name = name;
+
+    Helper::processNode(scene->mRootNode, scene, model);
 
     return true;
 }
