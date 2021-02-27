@@ -89,7 +89,7 @@ struct Model {
 namespace Helper {
 
 std::vector<char> readBinaryFile(const char* filename);
-bool importModel(const std::string& file);
+bool importModel(const std::string& name, const std::string& file);
 
 }  // namespace Helper
 
