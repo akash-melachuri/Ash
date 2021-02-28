@@ -44,28 +44,44 @@ void processMesh(aiMesh* mesh, const aiScene* scene, const std::string& name,
         vertices.push_back(vertex);
     }
 
+    size_t numIndices = 0;
+    for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
+        aiFace face = mesh->mFaces[i];
+        numIndices += face.mNumIndices;
+    }
+
+    indices.reserve(numIndices);
+    for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
+        aiFace face = mesh->mFaces[i];
+        for (uint32_t j = 0; j < face.mNumIndices; j++) {
+            indices.push_back(face.mIndices[j]);
+        }
+    }
+
     Renderer::loadMesh(name + "_" + std::to_string(iteration), vertices,
                        indices);
 }
 
 void processNode(aiNode* node, const aiScene* scene, const std::string& name,
                  uint32_t iteration) {
+    std::vector<std::string> meshes;
+    std::vector<std::string> textures;
+
     for (uint32_t i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         processMesh(mesh, scene, name, ++iteration);
+
+        // Load textures here
     }
 
     for (uint32_t i = 0; i < node->mNumChildren; i++) {
         processNode(node->mChildren[i], scene, name, iteration);
     }
 
-    std::vector<std::string> meshes;
-    std::vector<std::string> textures;
-
     meshes.reserve(iteration);
 
     for (uint32_t i = 0; i < iteration; i++) {
-        meshes.emplace_back(name + "_" + std::to_string(iteration));
+        meshes.emplace_back(name + "_" + std::to_string(i));
     }
 
     Renderer::loadModel(name, meshes, textures);
