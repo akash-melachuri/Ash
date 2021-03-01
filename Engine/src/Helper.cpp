@@ -62,6 +62,23 @@ void processMesh(aiMesh* mesh, const aiScene* scene, const std::string& name,
                        indices);
 }
 
+std::vector<std::string> loadTextures(std::string name, aiMaterial* mat,
+                                      aiTextureType type,
+                                      std::string typeName) {
+    std::vector<std::string> textures;
+    textures.resize(mat->GetTextureCount(type));
+    for (uint32_t i = 0; i < mat->GetTextureCount(type); i++) {
+        aiString path;
+        mat->GetTexture(type, i, &path);
+        Renderer::loadTexture(name + typeName + std::to_string(i),
+                              path.C_Str());
+        textures.push_back(name + typeName + std::to_string(i));
+        ASH_WARN("Path: {}", path.C_Str());
+    }
+
+    return textures;
+}
+
 void processNode(aiNode* node, const aiScene* scene, const std::string& name,
                  uint32_t iteration) {
     std::vector<std::string> meshes;
@@ -71,7 +88,15 @@ void processNode(aiNode* node, const aiScene* scene, const std::string& name,
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         processMesh(mesh, scene, name, ++iteration);
 
-        // Load textures here
+        if (mesh->mMaterialIndex > 0) {
+            aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+            std::vector<std::string> texs =
+                loadTextures(name, material, aiTextureType_DIFFUSE, "diffuse");
+            textures.insert(textures.end(), texs.begin(), texs.end());
+            texs = loadTextures(name, material, aiTextureType_NONE, "none");
+            textures.insert(textures.end(), texs.begin(), texs.end());
+            ASH_WARN("Textures: {}", texs.size());
+        }
     }
 
     for (uint32_t i = 0; i < node->mNumChildren; i++) {

@@ -38,7 +38,7 @@ void GameLayer::init() {
                         "assets/models/viking_room/viking_room.obj");
 
     Entity e = scene->spawn();
-    scene->addComponent<Renderable>(e, "Quad_statue", "main");
+    scene->addComponent<Renderable>(e, "viking_room", "main");
     scene->addComponent<Transform>(e, glm::vec3{0.0f, 0.0f, 0.0f});
     scene->addComponent<Spin>(e);
 
