@@ -29,7 +29,10 @@ void Renderer::loadTexture(const std::string& name, const std::string& path) {
     api->createTextureImage(path, textures[name]);
 }
 
-void Renderer::init() { api->init(pipelines); }
+void Renderer::init() {
+    api->init(pipelines);
+    Renderer::loadTexture("statue", "assets/textures/texture.jpg");
+}
 
 void Renderer::render() { api->render(); }
 

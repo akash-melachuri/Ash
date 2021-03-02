@@ -75,7 +75,9 @@ void App::run() {
     while (!window->shouldClose()) {
         for (auto system : systems) system->onUpdate();
 
+        APP_INFO("Before Render");
         Renderer::render();
+        APP_INFO("After Render");
 
         window->swapBuffers();
         window->pollEvents();

@@ -79,28 +79,23 @@ std::vector<std::string> loadTextures(std::string name, aiMaterial* mat,
     return textures;
 }
 
-void processNode(aiNode* node, const aiScene* scene, const std::string& name,
+void processNode(const aiScene* scene, const std::string& name,
                  uint32_t iteration) {
     std::vector<std::string> meshes;
     std::vector<std::string> textures;
 
-    for (uint32_t i = 0; i < node->mNumMeshes; i++) {
-        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+    for (uint32_t i = 0; i < scene->mNumMeshes; i++) {
+        aiMesh* mesh = scene->mMeshes[i];
         processMesh(mesh, scene, name, ++iteration);
 
-        if (mesh->mMaterialIndex > 0) {
-            aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+        if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
             std::vector<std::string> texs =
                 loadTextures(name, material, aiTextureType_DIFFUSE, "diffuse");
             textures.insert(textures.end(), texs.begin(), texs.end());
-            texs = loadTextures(name, material, aiTextureType_NONE, "none");
-            textures.insert(textures.end(), texs.begin(), texs.end());
-            ASH_WARN("Textures: {}", texs.size());
+        } else {
+            textures.push_back("statue");
         }
-    }
-
-    for (uint32_t i = 0; i < node->mNumChildren; i++) {
-        processNode(node->mChildren[i], scene, name, iteration);
     }
 
     meshes.reserve(iteration);
@@ -109,6 +104,7 @@ void processNode(aiNode* node, const aiScene* scene, const std::string& name,
         meshes.emplace_back(name + "_" + std::to_string(i));
     }
 
+    ASH_WARN("Textures: {}", textures.size());
     Renderer::loadModel(name, meshes, textures);
 }
 
@@ -124,7 +120,9 @@ bool importModel(const std::string& name, const std::string& file) {
         return false;
     }
 
-    Helper::processNode(scene->mRootNode, scene, name, 0);
+    std::vector<std::string> meshes;
+    std::vector<std::string> textures;
+    Helper::processNode(scene, name, 0);
 
     return true;
 }

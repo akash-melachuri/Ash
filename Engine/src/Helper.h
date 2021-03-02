@@ -68,6 +68,7 @@ struct IndexedVertexBuffer {
 
 struct Mesh {
     std::string name;
+
     IndexedVertexBuffer ivb;
 };
 
