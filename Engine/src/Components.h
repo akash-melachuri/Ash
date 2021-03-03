@@ -35,8 +35,6 @@ struct Renderable {
     Renderable(const std::string& model, const std::string& pipeline)
         : model(model), pipeline(pipeline) {
         Renderer::getAPI()->createUniformBuffers(ubos);
-        ASH_INFO("Creating model descriptor sets, {}",
-                 Renderer::getModel(model).textures.size());
         Renderer::getAPI()->createDescriptorSets(
             descriptorSets, ubos,
             Renderer::getTexture(Renderer::getModel(model).textures[0]));

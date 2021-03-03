@@ -28,8 +28,10 @@ struct Bob {
 
 void GameLayer::init() {
     scene = std::make_shared<Scene>();
+
     Renderer::loadMesh("Quad", vertices, indices);
     Renderer::loadTexture("statue", "assets/textures/texture.jpg");
+
     std::vector<std::string> meshes = {"Quad"};
     std::vector<std::string> textures = {"statue"};
     Renderer::loadModel("Quad_statue", meshes, textures);

@@ -25,8 +25,7 @@ std::vector<char> readBinaryFile(const char* filename) {
     return buffer;
 }
 
-void processMesh(aiMesh* mesh, const aiScene* scene, const std::string& name,
-                 uint32_t iteration) {
+void processMesh(aiMesh* mesh, const std::string& name, uint32_t iteration) {
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
 
@@ -62,38 +61,39 @@ void processMesh(aiMesh* mesh, const aiScene* scene, const std::string& name,
                        indices);
 }
 
-std::vector<std::string> loadTextures(std::string name, aiMaterial* mat,
-                                      aiTextureType type,
-                                      std::string typeName) {
+std::vector<std::string> loadTextures(const std::string& name,
+                                      const std::string& directory,
+                                      aiMaterial* mat, aiTextureType type,
+                                      const std::string& typeName) {
     std::vector<std::string> textures;
-    textures.resize(mat->GetTextureCount(type));
+    textures.reserve(mat->GetTextureCount(type));
     for (uint32_t i = 0; i < mat->GetTextureCount(type); i++) {
         aiString path;
         mat->GetTexture(type, i, &path);
         Renderer::loadTexture(name + typeName + std::to_string(i),
-                              path.C_Str());
-        textures.push_back(name + typeName + std::to_string(i));
-        ASH_WARN("Path: {}", path.C_Str());
+                              directory + std::string(path.C_Str()));
+        textures.emplace_back(name + typeName + std::to_string(i));
     }
 
     return textures;
 }
 
 void processNode(const aiScene* scene, const std::string& name,
-                 uint32_t iteration) {
+                 const std::string& directory, uint32_t iteration) {
     std::vector<std::string> meshes;
     std::vector<std::string> textures;
 
     for (uint32_t i = 0; i < scene->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[i];
-        processMesh(mesh, scene, name, ++iteration);
-
+        processMesh(mesh, name, iteration++);
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
         if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
-            std::vector<std::string> texs =
-                loadTextures(name, material, aiTextureType_DIFFUSE, "diffuse");
+            std::vector<std::string> texs = loadTextures(
+                name, directory, material, aiTextureType_DIFFUSE, "diffuse");
             textures.insert(textures.end(), texs.begin(), texs.end());
         } else {
+            ASH_INFO("Using backup texture");
+            // TODO: switch to white texture
             textures.push_back("statue");
         }
     }
@@ -104,25 +104,28 @@ void processNode(const aiScene* scene, const std::string& name,
         meshes.emplace_back(name + "_" + std::to_string(i));
     }
 
-    ASH_WARN("Textures: {}", textures.size());
     Renderer::loadModel(name, meshes, textures);
 }
 
 bool importModel(const std::string& name, const std::string& file) {
     Assimp::Importer importer;
 
-    const aiScene* scene = importer.ReadFile(file, aiProcess_Triangulate);
+    const aiScene* scene =
+        importer.ReadFile(file, aiProcess_Triangulate | aiProcess_FlipUVs);
+
+#ifdef ASH_WINDOWS
+    char separator = '\\';
+#else
+    char separator = '/';
+#endif
+
+    std::string directory = file.substr(0, file.find_last_of(separator) + 1);
 
     ASH_ASSERT(scene, "Failed to import mesh {}", file);
 
-    if (!scene) {
-        ASH_ERROR("Failed to import mesh {}", file);
-        return false;
-    }
-
     std::vector<std::string> meshes;
     std::vector<std::string> textures;
-    Helper::processNode(scene, name, 0);
+    Helper::processNode(scene, name, directory, 0);
 
     return true;
 }
