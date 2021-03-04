@@ -1036,30 +1036,34 @@ void VulkanAPI::recordCommandBuffers() {
                 auto& renderable = renderables.get(entity);
 
                 Model& model = Renderer::getModel(renderable.model);
-                Mesh& mesh = Renderer::getMesh(model.meshes[0]);
-                VkBuffer vb[] = {mesh.ivb.buffer};
+                for (uint32_t j = 0; j < model.meshes.size(); j++) {
+                    Mesh& mesh = Renderer::getMesh(model.meshes[j]);
+                    VkBuffer vb[] = {mesh.ivb.buffer};
 
-                // Each model should have their own pipeline
-                vkCmdBindPipeline(commandBuffers[i],
-                                  VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                  graphicsPipelines[renderable.pipeline]);
+                    // Each model should have their own pipeline
+                    vkCmdBindPipeline(commandBuffers[i],
+                                      VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                      graphicsPipelines[renderable.pipeline]);
 
-                // Each model has their own mesh and thus their own vertex and
-                // index buffers
-                vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vb, offsets);
+                    // Each model has their own mesh and thus their own vertex
+                    // and index buffers
+                    vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vb,
+                                           offsets);
 
-                vkCmdBindIndexBuffer(commandBuffers[i], mesh.ivb.buffer,
-                                     mesh.ivb.vertSize, VK_INDEX_TYPE_UINT32);
+                    vkCmdBindIndexBuffer(commandBuffers[i], mesh.ivb.buffer,
+                                         mesh.ivb.vertSize,
+                                         VK_INDEX_TYPE_UINT32);
 
-                // Each entity has their own transform and thus their own
-                // UBO transform matrix
-                vkCmdBindDescriptorSets(
-                    commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    pipelineLayout, 0, 1, &renderable.descriptorSets[i], 0,
-                    nullptr);
+                    // Each entity has their own transform and thus their own
+                    // UBO transform matrix
+                    vkCmdBindDescriptorSets(
+                        commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                        pipelineLayout, 0, 1, &renderable.descriptorSets[i], 0,
+                        nullptr);
 
-                vkCmdDrawIndexed(commandBuffers[i], mesh.ivb.numIndices, 1, 0,
-                                 0, 0);
+                    vkCmdDrawIndexed(commandBuffers[i], mesh.ivb.numIndices, 1,
+                                     0, 0, 0);
+                }
             }
         }
 
