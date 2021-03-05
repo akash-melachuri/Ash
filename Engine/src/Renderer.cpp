@@ -26,6 +26,11 @@ void Renderer::loadMesh(const std::string& name,
 }
 
 void Renderer::loadTexture(const std::string& name, const std::string& path) {
+    if (textures.contains(name)) {
+        ASH_WARN("Texture ID {} already exists, aborting texture loading",
+                 name);
+        return;
+    }
     api->createTextureImage(path, textures[name]);
 }
 

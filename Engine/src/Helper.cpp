@@ -111,7 +111,8 @@ bool importModel(const std::string& name, const std::string& file) {
     Assimp::Importer importer;
 
     const aiScene* scene =
-        importer.ReadFile(file, aiProcess_Triangulate | aiProcess_FlipUVs);
+        importer.ReadFile(file, aiProcess_Triangulate | aiProcess_FlipUVs |
+                                    aiProcess_OptimizeMeshes);
 
 #ifdef ASH_WINDOWS
     char separator = '\\';
