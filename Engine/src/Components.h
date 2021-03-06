@@ -30,14 +30,17 @@ struct Transform {
 
 struct Renderable {
     std::vector<UniformBuffer> ubos;
-    std::vector<VkDescriptorSet> descriptorSets;
+    std::vector<std::vector<VkDescriptorSet>> descriptorSets;
 
     Renderable(const std::string& model, const std::string& pipeline)
         : model(model), pipeline(pipeline) {
         Renderer::getAPI()->createUniformBuffers(ubos);
-        Renderer::getAPI()->createDescriptorSets(
-            descriptorSets, ubos,
-            Renderer::getTexture(Renderer::getModel(model).textures[0]));
+        descriptorSets.resize(Renderer::getModel(model).meshes.size());
+        for (uint32_t i = 0; i < Renderer::getModel(model).meshes.size(); i++) {
+            Renderer::getAPI()->createDescriptorSets(
+                descriptorSets[i], ubos,
+                Renderer::getTexture(Renderer::getModel(model).textures[i]));
+        }
     }
 
     std::string model;

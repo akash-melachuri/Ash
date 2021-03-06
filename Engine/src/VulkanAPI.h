@@ -20,7 +20,7 @@
 
 #define VULKAN_VERSION VK_API_VERSION_1_2
 
-#define MAX_DESCRIPTOR_SETS 10
+#define MAX_DESCRIPTOR_SETS 1000
 
 namespace Ash {
 

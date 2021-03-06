@@ -1058,8 +1058,8 @@ void VulkanAPI::recordCommandBuffers() {
                     // UBO transform matrix
                     vkCmdBindDescriptorSets(
                         commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                        pipelineLayout, 0, 1, &renderable.descriptorSets[i], 0,
-                        nullptr);
+                        pipelineLayout, 0, 1, &renderable.descriptorSets[j][i],
+                        0, nullptr);
 
                     vkCmdDrawIndexed(commandBuffers[i], mesh.ivb.numIndices, 1,
                                      0, 0, 0);
@@ -1156,10 +1156,13 @@ void VulkanAPI::recreateSwapchain() {
     auto renderables = scene->registry.view<Renderable>();
     for (auto entity : renderables) {
         auto& renderable = renderables.get(entity);
-        createDescriptorSets(
-            renderable.descriptorSets, renderable.ubos,
-            Renderer::getTexture(
-                Renderer::getModel(renderable.model).textures[0]));
+        for (uint32_t i = 0;
+             i < Renderer::getModel(renderable.model).meshes.size(); i++) {
+            createDescriptorSets(
+                renderable.descriptorSets[i], renderable.ubos,
+                Renderer::getTexture(
+                    Renderer::getModel(renderable.model).textures[i]));
+        }
     }
 
     createCommandBuffers();
