@@ -35,7 +35,8 @@ void GameLayer::init() {
     std::vector<std::string> textures = {"statue"};
     Renderer::loadModel("Quad_statue", meshes, textures);
 
-    Helper::importModel("viking_room", "assets/models/backpack/backpack.obj");
+    Helper::importModel("viking_room",
+                        "assets/models/viking_room/viking_room.obj");
 
     Entity e = scene->spawn();
     scene->addComponent<Renderable>(e, "viking_room", "main");

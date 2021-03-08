@@ -34,7 +34,10 @@ void Renderer::loadTexture(const std::string& name, const std::string& path) {
     api->createTextureImage(path, textures[name]);
 }
 
-void Renderer::init() { api->init(pipelines); }
+void Renderer::init() {
+    api->init(pipelines);
+    loadTexture("white", "assets/textures/white.png");
+}
 
 void Renderer::render() { api->render(); }
 
