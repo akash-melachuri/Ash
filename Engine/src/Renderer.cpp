@@ -49,7 +49,6 @@ void Renderer::setClearColor(const glm::vec4& clearColor) {
 
 void Renderer::setScene(std::shared_ptr<Scene> scene) {
     Renderer::scene = scene;
-    api->signalRecord();
 }
 
 }  // namespace Ash

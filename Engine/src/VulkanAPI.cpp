@@ -873,7 +873,6 @@ void VulkanAPI::createDescriptorPool(uint32_t maxSets) {
                "Failed to create descriptor pool");
 }
 
-// TODO Add texture parameter
 void VulkanAPI::createDescriptorSets(std::vector<VkDescriptorSet>& sets,
                                      const std::vector<UniformBuffer>& ubo,
                                      const Texture& texture) {
@@ -961,6 +960,7 @@ uint32_t VulkanAPI::findMemoryType(uint32_t typeFilter,
     }
 
     ASH_ASSERT(false, "Failed to find suitable memory type");
+    return -1;
 }
 
 void VulkanAPI::createCommandBuffers() {
@@ -1072,8 +1072,6 @@ void VulkanAPI::recordCommandBuffers() {
         ASH_ASSERT(vkEndCommandBuffer(commandBuffers[i]) == VK_SUCCESS,
                    "Failed to record command buffer {}", i);
     }
-
-    shouldRecord = false;
 }
 
 void VulkanAPI::createSyncObjects() {
@@ -1316,6 +1314,7 @@ void VulkanAPI::transitionImageLayout(VkImage image, VkFormat format,
         destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     } else {
         ASH_ASSERT(false, "Unsupported image layout transition");
+        return;
     }
 
     vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0,
@@ -1490,7 +1489,7 @@ void VulkanAPI::updateUniformBuffers(uint32_t currentImage) {
 }
 
 void VulkanAPI::render() {
-    if (shouldRecord) updateCommandBuffers();
+    updateCommandBuffers();
 
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE,
                     UINT64_MAX);
@@ -1680,11 +1679,7 @@ void VulkanAPI::createDepthResources() {
  *
  */
 
-void VulkanAPI::setClearColor(const glm::vec4& color) {
-    clearColor = color;
-
-    shouldRecord = true;
-}
+void VulkanAPI::setClearColor(const glm::vec4& color) { clearColor = color; }
 
 IndexedVertexBuffer VulkanAPI::createIndexedVertexArray(
     const std::vector<Vertex>& verts, const std::vector<uint32_t>& indices) {

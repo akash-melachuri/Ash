@@ -93,7 +93,6 @@ void processNode(const aiScene* scene, const std::string& name,
             textures.insert(textures.end(), texs.begin(), texs.end());
         } else {
             ASH_INFO("Using backup texture");
-            // TODO: switch to white texture
             textures.push_back("white");
         }
     }

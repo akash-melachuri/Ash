@@ -20,7 +20,7 @@
 
 #define VULKAN_VERSION VK_API_VERSION_1_2
 
-#define MAX_DESCRIPTOR_SETS 1000
+#define MAX_DESCRIPTOR_SETS 1024
 
 namespace Ash {
 
@@ -34,7 +34,6 @@ class VulkanAPI {
     void cleanup();
 
     void setClearColor(const glm::vec4& color);
-    void inline signalRecord() { shouldRecord = true; }
 
     IndexedVertexBuffer createIndexedVertexArray(
         const std::vector<Vertex>& verts, const std::vector<uint32_t>& indices);
@@ -162,10 +161,6 @@ class VulkanAPI {
 
     VkSampler textureSampler;
 
-    // When true, means command buffers need to be re-recorded because they
-    // are outdated. Usually means new object/change in rendering properties
-    // e.g. changing clear color or shaders
-    bool shouldRecord = false;
     VkCommandPool commandPool;
     VkCommandPool transferCommandPool;
     std::vector<VkCommandBuffer> commandBuffers;
