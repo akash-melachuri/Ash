@@ -572,7 +572,7 @@ void VulkanAPI::createDescriptorSetLayout() {
     ASH_INFO("Creating descriptor set layout");
     VkDescriptorSetLayoutBinding uboLayoutBinding{};
     uboLayoutBinding.binding = 0;
-    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
     uboLayoutBinding.descriptorCount = 1;
     uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
@@ -837,10 +837,29 @@ void VulkanAPI::createFramebuffers() {
     }
 }
 
+size_t calculateDynamicAllignment(size_t minUniformBufferAllignment,
+                                  size_t dynamicAllignment) {
+    if (minUniformBufferAllignment > 0)
+        dynamicAllignment =
+            (dynamicAllignment + minUniformBufferAllignment - 1) &
+            ~(minUniformBufferAllignment - 1);
+    return dynamicAllignment;
+}
+
 void VulkanAPI::createUniformBuffers(std::vector<UniformBuffer>& ubos) {
     ASH_INFO("Creating uniform buffers");
 
-    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+    size_t minUniformBufferAllignment =
+        properties.limits.minUniformBufferOffsetAlignment;
+    size_t dynamicAllignment = sizeof(UniformBufferObject);
+
+    dynamicAllignment = calculateDynamicAllignment(minUniformBufferAllignment,
+                                                   dynamicAllignment);
+
+    VkDeviceSize bufferSize = dynamicAllignment * MAX_INSTANCES;
 
     ubos.resize(swapchainImages.size());
 
@@ -855,7 +874,7 @@ void VulkanAPI::createDescriptorPool(uint32_t maxSets) {
     ASH_INFO("Creating descriptor pool");
 
     std::array<VkDescriptorPoolSize, 2> poolSizes{};
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
     poolSizes[0].descriptorCount =
         static_cast<uint32_t>(swapchainImages.size() * maxSets);
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -891,11 +910,21 @@ void VulkanAPI::createDescriptorSets(std::vector<VkDescriptorSet>& sets,
         vkAllocateDescriptorSets(device, &allocInfo, sets.data()) == VK_SUCCESS,
         "Failed to allocate descriptor sets");
 
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+    size_t minUniformBufferAllignment =
+        properties.limits.minUniformBufferOffsetAlignment;
+    size_t dynamicAllignment = sizeof(UniformBufferObject);
+
+    dynamicAllignment = calculateDynamicAllignment(minUniformBufferAllignment,
+                                                   dynamicAllignment);
+
     for (size_t i = 0; i < swapchainImages.size(); i++) {
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = ubo[i].uniformBuffer;
         bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(UniformBufferObject);
+        bufferInfo.range = dynamicAllignment;
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -908,7 +937,8 @@ void VulkanAPI::createDescriptorSets(std::vector<VkDescriptorSet>& sets,
         descriptorWrites[0].dstSet = sets[i];
         descriptorWrites[0].dstBinding = 0;
         descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[0].descriptorType =
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
         descriptorWrites[0].descriptorCount = 1;
         descriptorWrites[0].pBufferInfo = &bufferInfo;
 
@@ -1032,6 +1062,7 @@ void VulkanAPI::recordCommandBuffers() {
         if (scene) {
             auto renderables = scene->registry.view<Renderable>();
 
+            uint32_t h = 0;
             for (auto entity : renderables) {
                 auto& renderable = renderables.get(entity);
 
@@ -1054,16 +1085,30 @@ void VulkanAPI::recordCommandBuffers() {
                                          mesh.ivb.vertSize,
                                          VK_INDEX_TYPE_UINT32);
 
-                    // Each entity has their own transform and thus their own
-                    // UBO transform matrix
+                    VkPhysicalDeviceProperties properties;
+                    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+                    size_t minUniformBufferAllignment =
+                        properties.limits.minUniformBufferOffsetAlignment;
+                    size_t dynamicAllignment = sizeof(UniformBufferObject);
+
+                    dynamicAllignment = calculateDynamicAllignment(
+                        minUniformBufferAllignment, dynamicAllignment);
+
+                    uint32_t dynamicOffset =
+                        h * static_cast<uint32_t>(dynamicAllignment);
+
+                    // Each entity has their own transform and thus their
+                    // own UBO transform matrix
                     vkCmdBindDescriptorSets(
                         commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
                         pipelineLayout, 0, 1, &renderable.descriptorSets[j][i],
-                        0, nullptr);
+                        1, &dynamicOffset);
 
                     vkCmdDrawIndexed(commandBuffers[i], mesh.ivb.numIndices, 1,
                                      0, 0, 0);
                 }
+                h++;
             }
         }
 
@@ -1148,7 +1193,7 @@ void VulkanAPI::recreateSwapchain() {
     createRenderPass();
     createDepthResources();
     createFramebuffers();
-    createDescriptorPool(MAX_DESCRIPTOR_SETS);
+    createDescriptorPool(MAX_INSTANCES);
 
     std::shared_ptr<Scene> scene = Renderer::getScene();
     auto renderables = scene->registry.view<Renderable>();
@@ -1446,7 +1491,7 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createPipelineCache();
     createDescriptorSetLayout();
     createGraphicsPipelines(pipelines);
-    createDescriptorPool(MAX_DESCRIPTOR_SETS);
+    createDescriptorPool(MAX_INSTANCES);
     createCommandPools();
     createDepthResources();
     createFramebuffers();

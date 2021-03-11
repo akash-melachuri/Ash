@@ -20,7 +20,7 @@
 
 #define VULKAN_VERSION VK_API_VERSION_1_2
 
-#define MAX_DESCRIPTOR_SETS 1024
+#define MAX_INSTANCES 1024
 
 namespace Ash {
 
@@ -164,6 +164,9 @@ class VulkanAPI {
     VkCommandPool commandPool;
     VkCommandPool transferCommandPool;
     std::vector<VkCommandBuffer> commandBuffers;
+
+    std::vector<VkDescriptorSet> descriptorSets;
+    std::vector<VkBuffer> uniformBuffers;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
