@@ -37,9 +37,7 @@ class VulkanAPI {
 
     IndexedVertexBuffer createIndexedVertexArray(
         const std::vector<Vertex>& verts, const std::vector<uint32_t>& indices);
-    void createDescriptorSets(std::vector<VkDescriptorSet>& sets,
-                              const std::vector<UniformBuffer>& ubo,
-                              const Texture& texture);
+    void createDescriptorSets(const Texture& texture);
     void createUniformBuffers(std::vector<UniformBuffer>& ubos);
     void createTextureImage(const std::string& path, Texture& texture);
     void createTextureImageView(Texture& texture);
@@ -166,7 +164,7 @@ class VulkanAPI {
     std::vector<VkCommandBuffer> commandBuffers;
 
     std::vector<VkDescriptorSet> descriptorSets;
-    std::vector<VkBuffer> uniformBuffers;
+    std::vector<UniformBuffer> uniformBuffers;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
