@@ -576,16 +576,15 @@ void VulkanAPI::createDescriptorSetLayout() {
     uboLayoutBinding.descriptorCount = 1;
     uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    //    VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-    //    samplerLayoutBinding.binding = 1;
-    //    samplerLayoutBinding.descriptorCount = 1;
-    //    samplerLayoutBinding.descriptorType =
-    //        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    //    samplerLayoutBinding.pImmutableSamplers = nullptr;
-    //    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+    samplerLayoutBinding.binding = 0;
+    samplerLayoutBinding.descriptorCount = 1;
+    samplerLayoutBinding.descriptorType =
+        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerLayoutBinding.pImmutableSamplers = nullptr;
+    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    std::array<VkDescriptorSetLayoutBinding, 1> bindings = {
-        uboLayoutBinding /*, samplerLayoutBinding*/};
+    std::array<VkDescriptorSetLayoutBinding, 1> bindings = {uboLayoutBinding};
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -595,6 +594,13 @@ void VulkanAPI::createDescriptorSetLayout() {
     ASH_ASSERT(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr,
                                            &descriptorSetLayout) == VK_SUCCESS,
                "Failed to create descriptor set layout");
+
+    bindings[0] = samplerLayoutBinding;
+
+    ASH_ASSERT(
+        vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr,
+                                    &imageDescriptorSetLayout) == VK_SUCCESS,
+        "Failed to create descriptor set layout");
 }
 
 void VulkanAPI::createPipelineCache() {
@@ -727,11 +733,13 @@ void VulkanAPI::createGraphicsPipelines(
     dynamicState.dynamicStateCount = 2;
     dynamicState.pDynamicStates = dynamicStates;
 
-    // TOOD pass in both descriptorSetLayout's
+    std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
+        descriptorSetLayout, imageDescriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutInfo.setLayoutCount =
+        static_cast<uint32_t>(descriptorSetLayouts.size());
+    pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
     ASH_ASSERT(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr,
                                       &pipelineLayout) == VK_SUCCESS,
@@ -893,10 +901,54 @@ void VulkanAPI::createDescriptorPool(uint32_t maxSets) {
                "Failed to create descriptor pool");
 }
 
-void VulkanAPI::createDescriptorSets(const Texture& texture) {
+void VulkanAPI::createDescriptorSets(std::vector<VkDescriptorSet>& sets,
+                                     const Texture& texture) {
     ASH_INFO("Creating descriptor sets");
 
-    if (descriptorSets.size() == 0) {
+    std::vector<VkDescriptorSetLayout> layouts(swapchainImages.size(),
+                                               descriptorSetLayout);
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = descriptorPool;
+    allocInfo.descriptorSetCount =
+        static_cast<uint32_t>(swapchainImages.size());
+    allocInfo.pSetLayouts = layouts.data();
+
+    sets.resize(swapchainImages.size());
+    ASH_ASSERT(
+        vkAllocateDescriptorSets(device, &allocInfo, sets.data()) == VK_SUCCESS,
+        "Failed to allocate descriptor sets");
+
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+    for (size_t i = 0; i < swapchainImages.size(); i++) {
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = texture.imageView;
+        imageInfo.sampler = textureSampler;
+
+        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+
+        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[0].dstSet = sets[i];
+        descriptorWrites[0].dstBinding = 1;
+        descriptorWrites[0].dstArrayElement = 0;
+        descriptorWrites[0].descriptorType =
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[0].descriptorCount = 1;
+        descriptorWrites[0].pImageInfo = &imageInfo;
+
+        vkUpdateDescriptorSets(device,
+                               static_cast<uint32_t>(descriptorWrites.size()),
+                               descriptorWrites.data(), 0, nullptr);
+    }
+}
+
+void VulkanAPI::createDescriptorSets() {
+    ASH_INFO("Creating descriptor sets");
+
+    if (uboDescriptorSets.size() == 0) {
         std::vector<VkDescriptorSetLayout> layouts(swapchainImages.size(),
                                                    descriptorSetLayout);
         VkDescriptorSetAllocateInfo allocInfo{};
@@ -906,10 +958,11 @@ void VulkanAPI::createDescriptorSets(const Texture& texture) {
             static_cast<uint32_t>(swapchainImages.size());
         allocInfo.pSetLayouts = layouts.data();
 
-        descriptorSets.resize(swapchainImages.size());
-        ASH_ASSERT(vkAllocateDescriptorSets(
-                       device, &allocInfo, descriptorSets.data()) == VK_SUCCESS,
-                   "Failed to allocate descriptor sets");
+        uboDescriptorSets.resize(swapchainImages.size());
+        ASH_ASSERT(
+            vkAllocateDescriptorSets(device, &allocInfo,
+                                     uboDescriptorSets.data()) == VK_SUCCESS,
+            "Failed to allocate descriptor sets");
     }
 
     VkPhysicalDeviceProperties properties;
@@ -936,7 +989,7 @@ void VulkanAPI::createDescriptorSets(const Texture& texture) {
         std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
 
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = descriptorSets[i];
+        descriptorWrites[0].dstSet = uboDescriptorSets[i];
         descriptorWrites[0].dstBinding = 0;
         descriptorWrites[0].dstArrayElement = 0;
         descriptorWrites[0].descriptorType =
@@ -1103,6 +1156,11 @@ void VulkanAPI::recordCommandBuffers() {
 
                     // Each entity has their own transform and thus their
                     // own UBO transform matrix
+                    vkCmdBindDescriptorSets(commandBuffers[i],
+                                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                            pipelineLayout, 0, 1,
+                                            &uboDescriptorSets[i], 0, nullptr);
+
                     vkCmdBindDescriptorSets(
                         commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
                         pipelineLayout, 0, 1, &renderable.descriptorSets[j][i],
@@ -1204,8 +1262,10 @@ void VulkanAPI::recreateSwapchain() {
         auto& renderable = renderables.get(entity);
         for (uint32_t i = 0;
              i < Renderer::getModel(renderable.model).meshes.size(); i++) {
-            createDescriptorSets(Renderer::getTexture(
-                Renderer::getModel(renderable.model).textures[i]));
+            createDescriptorSets(
+                renderable.descriptorSets[i],
+                Renderer::getTexture(
+                    Renderer::getModel(renderable.model).textures[i]));
         }
     }
 
@@ -1523,14 +1583,14 @@ void VulkanAPI::updateUniformBuffers(uint32_t currentImage) {
 
             ubo.model = transform.getTransform();
 
-            void* data;
-            vmaMapMemory(allocator,
-                         renderable.ubos[currentImage].uniformBufferAllocation,
-                         &data);
-            std::memcpy(data, &ubo, sizeof(ubo));
-            vmaUnmapMemory(
-                allocator,
-                renderable.ubos[currentImage].uniformBufferAllocation);
+            //            void* data;
+            //            vmaMapMemory(allocator,
+            //                         renderable.ubos[currentImage].uniformBufferAllocation,
+            //                         &data);
+            //            std::memcpy(data, &ubo, sizeof(ubo));
+            //            vmaUnmapMemory(
+            //                allocator,
+            //                renderable.ubos[currentImage].uniformBufferAllocation);
         }
     }
 }
@@ -1629,16 +1689,9 @@ void VulkanAPI::cleanup() {
 
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 
-    std::shared_ptr<Scene> scene = Renderer::getScene();
-    if (scene) {
-        auto renderables = scene->registry.view<Renderable>();
-        for (auto entity : renderables) {
-            auto& renderable = renderables.get<Renderable>(entity);
-            for (auto buffer : renderable.ubos) {
-                vmaDestroyBuffer(allocator, buffer.uniformBuffer,
-                                 buffer.uniformBufferAllocation);
-            }
-        }
+    for (auto buffer : uniformBuffers) {
+        vmaDestroyBuffer(allocator, buffer.uniformBuffer,
+                         buffer.uniformBufferAllocation);
     }
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);

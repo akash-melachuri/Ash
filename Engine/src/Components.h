@@ -29,21 +29,21 @@ struct Transform {
 };
 
 struct Renderable {
-    std::vector<UniformBuffer> ubos;
-    std::vector<std::vector<VkDescriptorSet>> descriptorSets;
-
     Renderable(const std::string& model, const std::string& pipeline)
         : model(model), pipeline(pipeline) {
-        Renderer::getAPI()->createUniformBuffers(ubos);
         descriptorSets.resize(Renderer::getModel(model).meshes.size());
         for (uint32_t i = 0; i < Renderer::getModel(model).meshes.size(); i++) {
             Renderer::getAPI()->createDescriptorSets(
+                descriptorSets[i],
                 Renderer::getTexture(Renderer::getModel(model).textures[i]));
         }
     }
 
+    std::vector<std::vector<VkDescriptorSet>> descriptorSets;
     std::string model;
     std::string pipeline;
+
+    uint32_t id;
 };
 
 }  // namespace Ash
