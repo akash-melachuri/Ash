@@ -40,7 +40,7 @@ class VulkanAPI {
     void createDescriptorSets();
     void createDescriptorSets(std::vector<VkDescriptorSet>& sets,
                               const Texture& texture);
-    void createUniformBuffers(std::vector<UniformBuffer>& ubos);
+    void createUniformBuffers();
     void createTextureImage(const std::string& path, Texture& texture);
     void createTextureImageView(Texture& texture);
 

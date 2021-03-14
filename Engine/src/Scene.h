@@ -37,6 +37,8 @@ class Scene {
         };
     }
 
+    uint32_t entityCounter = 0;
+
     // TODO: Systems?
 
     entt::registry registry;

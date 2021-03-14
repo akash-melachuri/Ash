@@ -37,9 +37,11 @@ struct Renderable {
                 descriptorSets[i],
                 Renderer::getTexture(Renderer::getModel(model).textures[i]));
         }
+        id = Renderer::getScene()->entityCounter++;
     }
 
     std::vector<std::vector<VkDescriptorSet>> descriptorSets;
+
     std::string model;
     std::string pipeline;
 

@@ -855,7 +855,7 @@ size_t calculateDynamicAllignment(size_t minUniformBufferAllignment,
     return dynamicAllignment;
 }
 
-void VulkanAPI::createUniformBuffers(std::vector<UniformBuffer>& ubos) {
+void VulkanAPI::createUniformBuffers() {
     ASH_INFO("Creating uniform buffers");
 
     VkPhysicalDeviceProperties properties;
@@ -870,25 +870,26 @@ void VulkanAPI::createUniformBuffers(std::vector<UniformBuffer>& ubos) {
 
     VkDeviceSize bufferSize = dynamicAllignment * MAX_INSTANCES;
 
-    ubos.resize(swapchainImages.size());
+    uniformBuffers.resize(swapchainImages.size());
 
     for (size_t i = 0; i < swapchainImages.size(); i++) {
         createBuffer(bufferSize, VMA_MEMORY_USAGE_CPU_TO_GPU,
-                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, ubos[i].uniformBuffer,
-                     ubos[i].uniformBufferAllocation);
+                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                     uniformBuffers[i].uniformBuffer,
+                     uniformBuffers[i].uniformBufferAllocation);
     }
 }
 
 void VulkanAPI::createDescriptorPool(uint32_t maxSets) {
     ASH_INFO("Creating descriptor pool");
 
-    std::array<VkDescriptorPoolSize, 1> poolSizes{};
+    std::array<VkDescriptorPoolSize, 2> poolSizes{};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
     poolSizes[0].descriptorCount =
         static_cast<uint32_t>(swapchainImages.size() * maxSets);
-    //    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    //    poolSizes[1].descriptorCount =
-    //        static_cast<uint32_t>(swapchainImages.size());
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSizes[1].descriptorCount =
+        static_cast<uint32_t>(swapchainImages.size());
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1553,7 +1554,8 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createDescriptorSetLayout();
     createGraphicsPipelines(pipelines);
     createDescriptorPool(MAX_INSTANCES);
-    createUniformBuffers(uniformBuffers);
+    createUniformBuffers();
+    createDescriptorSets();
     createCommandPools();
     createDepthResources();
     createFramebuffers();
@@ -1574,23 +1576,39 @@ void VulkanAPI::updateUniformBuffers(uint32_t currentImage) {
 
     ubo.proj[1][1] *= -1;
 
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+    size_t minUniformBufferAllignment =
+        properties.limits.minUniformBufferOffsetAlignment;
+    size_t dynamicAllignment = sizeof(UniformBufferObject);
+
+    dynamicAllignment = calculateDynamicAllignment(minUniformBufferAllignment,
+                                                   dynamicAllignment);
+
     std::shared_ptr<Scene> scene = Renderer::getScene();
     if (scene) {
         auto renderables = scene->registry.view<Renderable, Transform>();
+        int i = 0;
         for (auto entity : renderables) {
             auto [renderable, transform] =
                 renderables.get<Renderable, Transform>(entity);
 
             ubo.model = transform.getTransform();
 
-            //            void* data;
-            //            vmaMapMemory(allocator,
-            //                         renderable.ubos[currentImage].uniformBufferAllocation,
-            //                         &data);
-            //            std::memcpy(data, &ubo, sizeof(ubo));
-            //            vmaUnmapMemory(
-            //                allocator,
-            //                renderable.ubos[currentImage].uniformBufferAllocation);
+            char* data;
+            vmaMapMemory(allocator,
+                         uniformBuffers[currentImage].uniformBufferAllocation,
+                         (void**)&data);
+
+            data += i * dynamicAllignment;
+
+            std::memcpy(data, &ubo, sizeof(ubo));
+
+            vmaUnmapMemory(
+                allocator,
+                uniformBuffers[currentImage].uniformBufferAllocation);
+            i++;
         }
     }
 }
