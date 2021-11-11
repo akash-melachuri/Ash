@@ -25,6 +25,7 @@ class App {
     inline static std::shared_ptr<Window> getWindow() {
         return instance->window;
     }
+    inline double getFrameTime() { return delta; }
 
    private:
     void run();
@@ -32,8 +33,12 @@ class App {
     std::shared_ptr<Window> window;
     std::vector<Layer*> systems;
 
+    double delta{};
+
     static App* instance;
 };
+
+inline double getFrameTime() { return App::get()->getFrameTime(); }
 
 }  // namespace Ash
 

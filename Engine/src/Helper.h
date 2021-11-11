@@ -8,6 +8,8 @@
 #include <array>
 #include <vector>
 
+#include "ashpch.h"
+
 namespace Ash {
 struct UniformBuffer {
     VkBuffer uniformBuffer;

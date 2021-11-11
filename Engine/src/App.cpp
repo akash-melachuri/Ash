@@ -69,6 +69,7 @@ void App::run() {
     APP_INFO("Running!");
 
     auto now = std::chrono::high_resolution_clock::now();
+    auto dNow = std::chrono::high_resolution_clock::now();
 
     uint32_t frames = 0;
 
@@ -86,6 +87,12 @@ void App::run() {
         auto frametime =
             std::chrono::duration_cast<std::chrono::milliseconds>(end - now)
                 .count();
+
+        delta = std::chrono::duration_cast<std::chrono::nanoseconds>(end - dNow)
+                    .count() /
+                1e6;
+
+        dNow = std::chrono::high_resolution_clock::now();
 
         if (frametime >= 1000.0f) {
             ASH_INFO("Average frame time: {} ms",

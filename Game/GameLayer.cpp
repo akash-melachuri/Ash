@@ -4,6 +4,7 @@
 #include <Scene.h>
 
 #include <chrono>
+#include <glm/ext/scalar_constants.hpp>
 
 GameLayer::GameLayer() {}
 GameLayer::~GameLayer() {}
@@ -16,6 +17,8 @@ const std::vector<Vertex> vertices = {{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f}},
 const std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
 
 std::shared_ptr<Scene> scene;
+
+float now;
 
 struct Spin {
     double rotation{0.0f};
@@ -49,6 +52,8 @@ void GameLayer::init() {
     scene->addComponent<Bob>(e2);
 
     Renderer::setScene(scene);
+
+    now = std::chrono::high_resolution_clock::now().time_since_epoch().count();
 }
 
 void GameLayer::onUpdate() {
@@ -62,7 +67,7 @@ void GameLayer::onUpdate() {
     auto spinView = scene->registry.view<Spin>();
     for (auto e : spinView) {
         auto& spin = spinView.get<Spin>(e);
-        spin.rotation = glm::radians(time * 90.0f);
+        spin.rotation += 1e-3 * Ash::getFrameTime();
     }
 
     auto bobView = scene->registry.view<Bob>();
