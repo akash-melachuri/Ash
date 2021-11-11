@@ -20,7 +20,7 @@
 
 #define VULKAN_VERSION VK_API_VERSION_1_2
 
-#define MAX_INSTANCES 1024
+#define MAX_DESCRIPTOR_SETS 1024
 
 namespace Ash {
 
@@ -37,10 +37,10 @@ class VulkanAPI {
 
     IndexedVertexBuffer createIndexedVertexArray(
         const std::vector<Vertex>& verts, const std::vector<uint32_t>& indices);
-    void createDescriptorSets();
     void createDescriptorSets(std::vector<VkDescriptorSet>& sets,
+                              const std::vector<UniformBuffer>& ubo,
                               const Texture& texture);
-    void createUniformBuffers();
+    void createUniformBuffers(std::vector<UniformBuffer>& ubos);
     void createTextureImage(const std::string& path, Texture& texture);
     void createTextureImageView(Texture& texture);
 
@@ -151,7 +151,6 @@ class VulkanAPI {
     VkRenderPass renderPass;
 
     VkDescriptorSetLayout descriptorSetLayout;
-    VkDescriptorSetLayout imageDescriptorSetLayout;
     VkPipelineLayout pipelineLayout;
 
     VkDescriptorPool descriptorPool;
@@ -165,9 +164,6 @@ class VulkanAPI {
     VkCommandPool commandPool;
     VkCommandPool transferCommandPool;
     std::vector<VkCommandBuffer> commandBuffers;
-
-    std::vector<VkDescriptorSet> uboDescriptorSets;
-    std::vector<UniformBuffer> uniformBuffers;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;

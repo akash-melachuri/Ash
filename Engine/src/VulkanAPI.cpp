@@ -572,19 +572,20 @@ void VulkanAPI::createDescriptorSetLayout() {
     ASH_INFO("Creating descriptor set layout");
     VkDescriptorSetLayoutBinding uboLayoutBinding{};
     uboLayoutBinding.binding = 0;
-    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     uboLayoutBinding.descriptorCount = 1;
     uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
     VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-    samplerLayoutBinding.binding = 0;
+    samplerLayoutBinding.binding = 1;
     samplerLayoutBinding.descriptorCount = 1;
     samplerLayoutBinding.descriptorType =
         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     samplerLayoutBinding.pImmutableSamplers = nullptr;
     samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    std::array<VkDescriptorSetLayoutBinding, 1> bindings = {uboLayoutBinding};
+    std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
+        uboLayoutBinding, samplerLayoutBinding};
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -594,13 +595,6 @@ void VulkanAPI::createDescriptorSetLayout() {
     ASH_ASSERT(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr,
                                            &descriptorSetLayout) == VK_SUCCESS,
                "Failed to create descriptor set layout");
-
-    bindings[0] = samplerLayoutBinding;
-
-    ASH_ASSERT(
-        vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr,
-                                    &imageDescriptorSetLayout) == VK_SUCCESS,
-        "Failed to create descriptor set layout");
 }
 
 void VulkanAPI::createPipelineCache() {
@@ -733,13 +727,10 @@ void VulkanAPI::createGraphicsPipelines(
     dynamicState.dynamicStateCount = 2;
     dynamicState.pDynamicStates = dynamicStates;
 
-    std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
-        descriptorSetLayout, imageDescriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount =
-        static_cast<uint32_t>(descriptorSetLayouts.size());
-    pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
     ASH_ASSERT(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr,
                                       &pipelineLayout) == VK_SUCCESS,
@@ -846,37 +837,17 @@ void VulkanAPI::createFramebuffers() {
     }
 }
 
-size_t calculateDynamicAllignment(size_t minUniformBufferAllignment,
-                                  size_t dynamicAllignment) {
-    if (minUniformBufferAllignment > 0)
-        dynamicAllignment =
-            (dynamicAllignment + minUniformBufferAllignment - 1) &
-            ~(minUniformBufferAllignment - 1);
-    return dynamicAllignment;
-}
-
-void VulkanAPI::createUniformBuffers() {
+void VulkanAPI::createUniformBuffers(std::vector<UniformBuffer>& ubos) {
     ASH_INFO("Creating uniform buffers");
 
-    VkPhysicalDeviceProperties properties;
-    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
-    size_t minUniformBufferAllignment =
-        properties.limits.minUniformBufferOffsetAlignment;
-    size_t dynamicAllignment = sizeof(UniformBufferObject);
-
-    dynamicAllignment = calculateDynamicAllignment(minUniformBufferAllignment,
-                                                   dynamicAllignment);
-
-    VkDeviceSize bufferSize = dynamicAllignment * MAX_INSTANCES;
-
-    uniformBuffers.resize(swapchainImages.size());
+    ubos.resize(swapchainImages.size());
 
     for (size_t i = 0; i < swapchainImages.size(); i++) {
         createBuffer(bufferSize, VMA_MEMORY_USAGE_CPU_TO_GPU,
-                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                     uniformBuffers[i].uniformBuffer,
-                     uniformBuffers[i].uniformBufferAllocation);
+                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, ubos[i].uniformBuffer,
+                     ubos[i].uniformBufferAllocation);
     }
 }
 
@@ -884,7 +855,7 @@ void VulkanAPI::createDescriptorPool(uint32_t maxSets) {
     ASH_INFO("Creating descriptor pool");
 
     std::array<VkDescriptorPoolSize, 2> poolSizes{};
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSizes[0].descriptorCount =
         static_cast<uint32_t>(swapchainImages.size() * maxSets);
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -903,9 +874,9 @@ void VulkanAPI::createDescriptorPool(uint32_t maxSets) {
 }
 
 void VulkanAPI::createDescriptorSets(std::vector<VkDescriptorSet>& sets,
+                                     const std::vector<UniformBuffer>& ubo,
                                      const Texture& texture) {
     ASH_INFO("Creating descriptor sets");
-
     std::vector<VkDescriptorSetLayout> layouts(swapchainImages.size(),
                                                descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -920,93 +891,35 @@ void VulkanAPI::createDescriptorSets(std::vector<VkDescriptorSet>& sets,
         vkAllocateDescriptorSets(device, &allocInfo, sets.data()) == VK_SUCCESS,
         "Failed to allocate descriptor sets");
 
-    VkPhysicalDeviceProperties properties;
-    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-
     for (size_t i = 0; i < swapchainImages.size(); i++) {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = ubo[i].uniformBuffer;
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(UniformBufferObject);
+
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         imageInfo.imageView = texture.imageView;
         imageInfo.sampler = textureSampler;
 
-        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[0].dstSet = sets[i];
-        descriptorWrites[0].dstBinding = 1;
-        descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType =
-            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[0].descriptorCount = 1;
-        descriptorWrites[0].pImageInfo = &imageInfo;
-
-        vkUpdateDescriptorSets(device,
-                               static_cast<uint32_t>(descriptorWrites.size()),
-                               descriptorWrites.data(), 0, nullptr);
-    }
-}
-
-void VulkanAPI::createDescriptorSets() {
-    ASH_INFO("Creating descriptor sets");
-
-    if (uboDescriptorSets.size() == 0) {
-        std::vector<VkDescriptorSetLayout> layouts(swapchainImages.size(),
-                                                   descriptorSetLayout);
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool;
-        allocInfo.descriptorSetCount =
-            static_cast<uint32_t>(swapchainImages.size());
-        allocInfo.pSetLayouts = layouts.data();
-
-        uboDescriptorSets.resize(swapchainImages.size());
-        ASH_ASSERT(
-            vkAllocateDescriptorSets(device, &allocInfo,
-                                     uboDescriptorSets.data()) == VK_SUCCESS,
-            "Failed to allocate descriptor sets");
-    }
-
-    VkPhysicalDeviceProperties properties;
-    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-
-    size_t minUniformBufferAllignment =
-        properties.limits.minUniformBufferOffsetAlignment;
-    size_t dynamicAllignment = sizeof(UniformBufferObject);
-
-    dynamicAllignment = calculateDynamicAllignment(minUniformBufferAllignment,
-                                                   dynamicAllignment);
-
-    for (size_t i = 0; i < swapchainImages.size(); i++) {
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = uniformBuffers[i].uniformBuffer;
-        bufferInfo.offset = 0;
-        bufferInfo.range = dynamicAllignment;
-
-        //        VkDescriptorImageInfo imageInfo{};
-        //        imageInfo.imageLayout =
-        //        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; imageInfo.imageView
-        //        = texture.imageView; imageInfo.sampler = textureSampler;
-
-        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
-
-        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = uboDescriptorSets[i];
         descriptorWrites[0].dstBinding = 0;
         descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType =
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         descriptorWrites[0].descriptorCount = 1;
         descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-        //        descriptorWrites[1].sType =
-        //        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        //        descriptorWrites[1].dstSet = descriptorSets[i];
-        //        descriptorWrites[1].dstBinding = 1;
-        //        descriptorWrites[1].dstArrayElement = 0;
-        //        descriptorWrites[1].descriptorType =
-        //            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        //        descriptorWrites[1].descriptorCount = 1;
-        //        descriptorWrites[1].pImageInfo = &imageInfo;
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = sets[i];
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType =
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pImageInfo = &imageInfo;
 
         vkUpdateDescriptorSets(device,
                                static_cast<uint32_t>(descriptorWrites.size()),
@@ -1119,7 +1032,6 @@ void VulkanAPI::recordCommandBuffers() {
         if (scene) {
             auto renderables = scene->registry.view<Renderable>();
 
-            uint32_t h = 0;
             for (auto entity : renderables) {
                 auto& renderable = renderables.get(entity);
 
@@ -1142,35 +1054,16 @@ void VulkanAPI::recordCommandBuffers() {
                                          mesh.ivb.vertSize,
                                          VK_INDEX_TYPE_UINT32);
 
-                    VkPhysicalDeviceProperties properties;
-                    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-
-                    size_t minUniformBufferAllignment =
-                        properties.limits.minUniformBufferOffsetAlignment;
-                    size_t dynamicAllignment = sizeof(UniformBufferObject);
-
-                    dynamicAllignment = calculateDynamicAllignment(
-                        minUniformBufferAllignment, dynamicAllignment);
-
-                    uint32_t dynamicOffset =
-                        h * static_cast<uint32_t>(dynamicAllignment);
-
-                    // Each entity has their own transform and thus their
-                    // own UBO transform matrix
-                    vkCmdBindDescriptorSets(commandBuffers[i],
-                                            VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                            pipelineLayout, 0, 1,
-                                            &uboDescriptorSets[i], 0, nullptr);
-
+                    // Each entity has their own transform and thus their own
+                    // UBO transform matrix
                     vkCmdBindDescriptorSets(
                         commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
                         pipelineLayout, 0, 1, &renderable.descriptorSets[j][i],
-                        1, &dynamicOffset);
+                        0, nullptr);
 
                     vkCmdDrawIndexed(commandBuffers[i], mesh.ivb.numIndices, 1,
                                      0, 0, 0);
                 }
-                h++;
             }
         }
 
@@ -1255,7 +1148,7 @@ void VulkanAPI::recreateSwapchain() {
     createRenderPass();
     createDepthResources();
     createFramebuffers();
-    createDescriptorPool(MAX_INSTANCES);
+    createDescriptorPool(MAX_DESCRIPTOR_SETS);
 
     std::shared_ptr<Scene> scene = Renderer::getScene();
     auto renderables = scene->registry.view<Renderable>();
@@ -1264,7 +1157,7 @@ void VulkanAPI::recreateSwapchain() {
         for (uint32_t i = 0;
              i < Renderer::getModel(renderable.model).meshes.size(); i++) {
             createDescriptorSets(
-                renderable.descriptorSets[i],
+                renderable.descriptorSets[i], renderable.ubos,
                 Renderer::getTexture(
                     Renderer::getModel(renderable.model).textures[i]));
         }
@@ -1553,9 +1446,7 @@ void VulkanAPI::init(const std::vector<Pipeline>& pipelines) {
     createPipelineCache();
     createDescriptorSetLayout();
     createGraphicsPipelines(pipelines);
-    createDescriptorPool(MAX_INSTANCES);
-    createUniformBuffers();
-    createDescriptorSets();
+    createDescriptorPool(MAX_DESCRIPTOR_SETS);
     createCommandPools();
     createDepthResources();
     createFramebuffers();
@@ -1576,39 +1467,23 @@ void VulkanAPI::updateUniformBuffers(uint32_t currentImage) {
 
     ubo.proj[1][1] *= -1;
 
-    VkPhysicalDeviceProperties properties;
-    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-
-    size_t minUniformBufferAllignment =
-        properties.limits.minUniformBufferOffsetAlignment;
-    size_t dynamicAllignment = sizeof(UniformBufferObject);
-
-    dynamicAllignment = calculateDynamicAllignment(minUniformBufferAllignment,
-                                                   dynamicAllignment);
-
     std::shared_ptr<Scene> scene = Renderer::getScene();
     if (scene) {
         auto renderables = scene->registry.view<Renderable, Transform>();
-        int i = 0;
         for (auto entity : renderables) {
             auto [renderable, transform] =
                 renderables.get<Renderable, Transform>(entity);
 
             ubo.model = transform.getTransform();
 
-            char* data;
+            void* data;
             vmaMapMemory(allocator,
-                         uniformBuffers[currentImage].uniformBufferAllocation,
-                         (void**)&data);
-
-            data += i * dynamicAllignment;
-
+                         renderable.ubos[currentImage].uniformBufferAllocation,
+                         &data);
             std::memcpy(data, &ubo, sizeof(ubo));
-
             vmaUnmapMemory(
                 allocator,
-                uniformBuffers[currentImage].uniformBufferAllocation);
-            i++;
+                renderable.ubos[currentImage].uniformBufferAllocation);
         }
     }
 }
@@ -1707,9 +1582,16 @@ void VulkanAPI::cleanup() {
 
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 
-    for (auto buffer : uniformBuffers) {
-        vmaDestroyBuffer(allocator, buffer.uniformBuffer,
-                         buffer.uniformBufferAllocation);
+    std::shared_ptr<Scene> scene = Renderer::getScene();
+    if (scene) {
+        auto renderables = scene->registry.view<Renderable>();
+        for (auto entity : renderables) {
+            auto& renderable = renderables.get<Renderable>(entity);
+            for (auto buffer : renderable.ubos) {
+                vmaDestroyBuffer(allocator, buffer.uniformBuffer,
+                                 buffer.uniformBufferAllocation);
+            }
+        }
     }
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
