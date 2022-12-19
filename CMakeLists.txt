@@ -31,7 +31,7 @@ if (DEFINED ENV{VULKAN_SDK})
 	set(VULKAN_INCLUDE_DIR "$ENV{VULKAN_SDK}/Lib/INCLUDE")
 endif()
 
-find_package(Vulkan REQUIRED FATAL_ERROR)
+find_package(Vulkan REQUIRED)
 
 set(glm_DIR "vendor/glm/cmake/glm/")
 find_package(glm REQUIRED)
@@ -39,6 +39,8 @@ find_package(glm REQUIRED)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+set(ASSIMP_WARNINGS_AS_ERRORS OFF)
 
 add_subdirectory(vendor/GLFW)
 add_subdirectory(vendor/spdlog)
