@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 function(add_shader TARGET SHADER)
-    find_program(GLSLC glslc)
+    find_program(GLSLC glslc /usr/bin/)
 
     get_filename_component(OUTPUT ${SHADER} NAME)
 

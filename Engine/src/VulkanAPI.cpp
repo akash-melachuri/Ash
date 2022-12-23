@@ -292,15 +292,19 @@ void VulkanAPI::pickPhysicalDevice() {
 
   std::multimap<int, VkPhysicalDevice> candidates;
 
+  int maxScore{0};
+  VkPhysicalDevice bestDevice{devices[0]};
   for (const auto &device : devices) {
-    if (isDeviceSuitable(device)) {
-      physicalDevice = device;
-      VkPhysicalDeviceProperties properties;
-      vkGetPhysicalDeviceProperties(device, &properties);
-      ASH_INFO("Selecting {} as the physical device", properties.deviceName);
-      break;
+    if (rateDeviceSuitability(device) > maxScore && isDeviceSuitable(device)) {
+      maxScore = rateDeviceSuitability(device);
+      bestDevice = device;
     }
   }
+
+  physicalDevice = bestDevice;
+  VkPhysicalDeviceProperties properties;
+  vkGetPhysicalDeviceProperties(bestDevice, &properties);
+  ASH_INFO("Selecting {} as the physical device", properties.deviceName);
 
   ASH_ASSERT(physicalDevice != VK_NULL_HANDLE, "No suitable device found");
 }
