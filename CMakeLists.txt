@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.2)
 
 function(add_shader TARGET SHADER)
     find_program(GLSLC glslc /usr/bin/)
@@ -33,9 +33,6 @@ endif()
 
 find_package(Vulkan REQUIRED)
 
-set(glm_DIR "vendor/glm/cmake/glm/")
-find_package(glm REQUIRED)
-
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -45,6 +42,8 @@ set(ASSIMP_WARNINGS_AS_ERRORS OFF)
 add_subdirectory(vendor/GLFW)
 add_subdirectory(vendor/spdlog)
 add_subdirectory(vendor/assimp)
+add_subdirectory(vendor/glm)
+add_subdirectory(vendor/VulkanMemoryAllocator)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
@@ -54,8 +53,7 @@ include_directories(vendor/entt/include)
 include_directories(vendor/stb_image)
 
 file(GLOB_RECURSE SOURCES Engine/*.cpp)
-add_library(ash ${SOURCES} vendor/VulkanMemoryAllocator/src/vk_mem_alloc.h)
-target_include_directories(ash PUBLIC vendor/VulkanMemoryAllocator/src)
+add_library(ash ${SOURCES})
 target_include_directories(ash PUBLIC vendor/assimp/include)
 target_precompile_headers(ash PRIVATE Engine/ashpch.h)
 target_compile_options(ash PRIVATE
@@ -74,8 +72,9 @@ endif()
 target_link_libraries(ash glfw)
 target_link_libraries(ash Vulkan::Vulkan)
 target_link_libraries(ash glm::glm)
-target_link_libraries(ash spdlog)
+target_link_libraries(ash spdlog::spdlog)
 target_link_libraries(ash assimp)
+target_link_libraries(ash GPUOpen::VulkanMemoryAllocator)
 
 file(GLOB_RECURSE GAME_SOURCES Game/*.cpp)
 add_executable(game ${GAME_SOURCES})
