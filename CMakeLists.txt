@@ -79,6 +79,11 @@ target_link_libraries(ash GPUOpen::VulkanMemoryAllocator)
 file(GLOB_RECURSE GAME_SOURCES Game/*.cpp)
 add_executable(game ${GAME_SOURCES})
 
+add_custom_target(assets
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/assets ${CMAKE_CURRENT_BINARY_DIR}/assets
+)
+add_dependencies(game assets)
+
 file(GLOB_RECURSE SHADER_SOURCES ${CMAKE_SOURCE_DIR}/assets/shaders/*)
 foreach(file ${SHADER_SOURCES})
     add_shader(game ${file})
@@ -90,4 +95,3 @@ target_compile_options(game PRIVATE
 )
 target_link_libraries(game ash)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT game)
-
