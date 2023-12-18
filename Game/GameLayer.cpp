@@ -18,8 +18,6 @@ const std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
 
 std::shared_ptr<Scene> scene;
 
-float now;
-
 struct Spin {
   double rotation{0.0f};
 };
@@ -27,6 +25,15 @@ struct Spin {
 struct Bob {
   double height{0.0f};
 };
+
+Camera camera;
+
+float yaw{180};
+float pitch{};
+float sensitivity = 0.1;
+float speed = 0.01;
+
+std::pair<int, int> last_mouse_pos{};
 
 void GameLayer::init() {
   scene = std::make_shared<Scene>();
@@ -44,10 +51,13 @@ void GameLayer::init() {
   Entity e = scene->spawn();
   scene->addComponent<Renderable>(e, "viking_room", "main");
   scene->addComponent<Transform>(e, glm::vec3{0.0f, 0.0f, 0.0f});
+  scene->addComponent<Spin>(e);
 
   Renderer::setScene(scene);
 
-  now = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+  App::getWindow()->disableCursor();
+  auto dimensions = App::getWindow()->getWindowSize();
+  last_mouse_pos = {dimensions.first / 2, dimensions.second / 2};
 }
 
 void GameLayer::onUpdate() {
@@ -57,6 +67,23 @@ void GameLayer::onUpdate() {
   float time = std::chrono::duration<float, std::chrono::seconds::period>(
                    currentTime - startTime)
                    .count();
+
+  auto curr_mouse_pos = App::getWindow()->getCursorPos();
+  std::pair<int, int> mouse_pos_delta = {
+      curr_mouse_pos.first - last_mouse_pos.first,
+      curr_mouse_pos.second - last_mouse_pos.second};
+
+  yaw -= mouse_pos_delta.first * sensitivity * Ash::getFrameTime();
+  pitch -= mouse_pos_delta.second * sensitivity * Ash::getFrameTime();
+
+  pitch = fmin(89.0, pitch);
+  pitch = fmax(-89.0, pitch);
+
+  glm::vec3 dir;
+  dir.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+  dir.y = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+  dir.z = sin(glm::radians(pitch));
+  camera.center = camera.eye + dir;
 
   auto spinView = scene->registry.view<Spin>();
   for (auto e : spinView) {
@@ -81,4 +108,37 @@ void GameLayer::onUpdate() {
     auto [bob, transform] = bobTransform.get<Bob, Transform>(e);
     transform.position.z = bob.height;
   }
+
+  dir.z = 0;
+  dir = glm::normalize(dir);
+
+  glm::vec3 right = glm::cross(dir, camera.up);
+
+  if (App::getWindow()->getKey(KEY_W) == EventStatus::PRESSED) {
+    camera.eye += dir * speed * static_cast<float>(Ash::getFrameTime());
+  }
+
+  if (App::getWindow()->getKey(KEY_S) == EventStatus::PRESSED) {
+    camera.eye -= dir * speed * static_cast<float>(Ash::getFrameTime());
+  }
+
+  if (App::getWindow()->getKey(KEY_A) == EventStatus::PRESSED) {
+    camera.eye -= right * speed * static_cast<float>(Ash::getFrameTime());
+  }
+
+  if (App::getWindow()->getKey(KEY_D) == EventStatus::PRESSED) {
+    camera.eye += right * speed * static_cast<float>(Ash::getFrameTime());
+  }
+
+  if (App::getWindow()->getKey(KEY_LSHIFT) == EventStatus::PRESSED) {
+    camera.eye.z -= speed * Ash::getFrameTime();
+  }
+
+  if (App::getWindow()->getKey(KEY_SPACE) == EventStatus::PRESSED) {
+    camera.eye.z += speed * Ash::getFrameTime();
+  }
+
+  Renderer::setCamera(camera);
+
+  last_mouse_pos = curr_mouse_pos;
 }

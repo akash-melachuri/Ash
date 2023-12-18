@@ -762,7 +762,6 @@ void VulkanAPI::createGraphicsPipelines(
   pipelineInfo.basePipelineHandle = graphicsPipelines["main"];
   pipelineInfo.basePipelineIndex = -1;
 
-  size_t j = 0;
   for (const Pipeline &pipeline : pipelines) {
     std::vector<VkPipelineShaderStageCreateInfo> shaderStageInfos;
     std::vector<VkShaderModule> shaderModules;
@@ -800,8 +799,6 @@ void VulkanAPI::createGraphicsPipelines(
 
     for (auto &module : shaderModules)
       vkDestroyShaderModule(device, module, nullptr);
-
-    j++;
   }
 
   vkDestroyShaderModule(device, vertShaderModule, nullptr);

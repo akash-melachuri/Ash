@@ -5,20 +5,20 @@
 using namespace Ash;
 
 int main() {
-    // Load resources
-    // Renderer::loadPipeline(Pipeline("assets/shaders/phong.vert.spv",
-    //                                 "assets/shaders/phong.frag.spv",
-    //                                 "Phong"));
+  // Load resources
+  // Renderer::loadPipeline(Pipeline("assets/shaders/phong.vert.spv",
+  //                                 "assets/shaders/phong.frag.spv",
+  //                                 "Phong"));
 
-    // Initialize application
-    App::init();
+  // Initialize application
+  App::init();
 
-    // Add user layers
-    App::addLayer(new GameLayer());
+  // Add user layers
+  App::addLayer(new GameLayer());
 
-    // Start
-    App::start();
+  // Start
+  App::start();
 
-    // Cleanup
-    App::cleanup();
+  // Cleanup
+  App::cleanup();
 }

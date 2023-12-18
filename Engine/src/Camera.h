@@ -9,7 +9,7 @@ class Camera {
 public:
   inline glm::mat4 getView() { return glm::lookAt(eye, center, up); }
 
-  glm::vec3 eye{2};
+  glm::vec3 eye{2, 0, 0};
   glm::vec3 center{0};
   glm::vec3 up{0, 0, 1};
 
