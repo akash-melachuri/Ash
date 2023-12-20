@@ -20,14 +20,18 @@ public:
 
   static void loadPipeline(const Pipeline &pipeline);
 
-  // TODO Compare inline performance
-  static Mesh &getMesh(const std::string &name) { return meshes[name]; }
+  static inline Mesh &getMesh(const std::string &name) { return meshes[name]; }
+  static inline bool hasMesh(const std::string &name) {
+    return meshes.count(name);
+  }
 
-  // TODO Compare inline performance
-  static Model &getModel(const std::string &name) { return models[name]; }
+  static inline Model &getModel(const std::string &name) {
+    return models[name];
+  }
 
-  // TODO Compare inline performance
-  static Texture &getTexture(const std::string &name) { return textures[name]; }
+  static inline Texture &getTexture(const std::string &name) {
+    return textures[name];
+  }
 
   static void loadModel(const std::string &name,
                         const std::vector<std::string> &meshes,
@@ -49,7 +53,7 @@ public:
 
   static inline std::shared_ptr<Scene> getScene() { return scene; }
   static inline std::shared_ptr<VulkanAPI> getAPI() { return api; }
-  static inline Camera& getCamera() { return camera; }
+  static inline Camera &getCamera() { return camera; }
 
 private:
   static std::shared_ptr<VulkanAPI> api;

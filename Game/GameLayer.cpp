@@ -30,7 +30,7 @@ Camera camera;
 
 float yaw{180};
 float pitch{};
-float sensitivity = 0.1;
+float sensitivity = 0.01;
 float speed = 0.01;
 
 std::pair<int, int> last_mouse_pos{};
@@ -45,13 +45,13 @@ void GameLayer::init() {
   std::vector<std::string> textures = {"statue"};
   Renderer::loadModel("Quad_statue", meshes, textures);
 
-  Helper::importModel("viking_room",
-                      "assets/models/viking_room/viking_room.obj");
+  Helper::importModel("sponza",
+                      "assets/models/sponza/NewSponza_Main_glTF_002.gltf");
 
   Entity e = scene->spawn();
-  scene->addComponent<Renderable>(e, "viking_room", "main");
-  scene->addComponent<Transform>(e, glm::vec3{0.0f, 0.0f, 0.0f});
-  scene->addComponent<Spin>(e);
+  scene->addComponent<Renderable>(e, "sponza", "main");
+  Transform transform{{10, 0, 0}};
+  scene->addComponent<Transform>(e, transform);
 
   Renderer::setScene(scene);
 
@@ -73,7 +73,7 @@ void GameLayer::onUpdate() {
       curr_mouse_pos.first - last_mouse_pos.first,
       curr_mouse_pos.second - last_mouse_pos.second};
 
-  yaw -= mouse_pos_delta.first * sensitivity * Ash::getFrameTime();
+  yaw += mouse_pos_delta.first * sensitivity * Ash::getFrameTime();
   pitch -= mouse_pos_delta.second * sensitivity * Ash::getFrameTime();
 
   pitch = fmin(89.0, pitch);
@@ -81,9 +81,8 @@ void GameLayer::onUpdate() {
 
   glm::vec3 dir;
   dir.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-  dir.y = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-  dir.z = sin(glm::radians(pitch));
-  camera.center = camera.eye + dir;
+  dir.y = sin(glm::radians(pitch));
+  dir.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 
   auto spinView = scene->registry.view<Spin>();
   for (auto e : spinView) {
@@ -109,17 +108,18 @@ void GameLayer::onUpdate() {
     transform.position.z = bob.height;
   }
 
-  dir.z = 0;
-  dir = glm::normalize(dir);
+  glm::vec3 forward = dir;
+  forward.y = 0;
+  forward = glm::normalize(forward);
 
   glm::vec3 right = glm::cross(dir, camera.up);
 
   if (App::getWindow()->getKey(KEY_W) == EventStatus::PRESSED) {
-    camera.eye += dir * speed * static_cast<float>(Ash::getFrameTime());
+    camera.eye += forward * speed * static_cast<float>(Ash::getFrameTime());
   }
 
   if (App::getWindow()->getKey(KEY_S) == EventStatus::PRESSED) {
-    camera.eye -= dir * speed * static_cast<float>(Ash::getFrameTime());
+    camera.eye -= forward * speed * static_cast<float>(Ash::getFrameTime());
   }
 
   if (App::getWindow()->getKey(KEY_A) == EventStatus::PRESSED) {
@@ -131,12 +131,14 @@ void GameLayer::onUpdate() {
   }
 
   if (App::getWindow()->getKey(KEY_LSHIFT) == EventStatus::PRESSED) {
-    camera.eye.z -= speed * Ash::getFrameTime();
+    camera.eye.y -= speed * Ash::getFrameTime();
   }
 
   if (App::getWindow()->getKey(KEY_SPACE) == EventStatus::PRESSED) {
-    camera.eye.z += speed * Ash::getFrameTime();
+    camera.eye.y += speed * Ash::getFrameTime();
   }
+
+  camera.center = camera.eye + dir;
 
   Renderer::setCamera(camera);
 

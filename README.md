@@ -12,6 +12,7 @@ Build Dependencies:
 - spdlog (included as submodule)
 - Vulkan Memory Allocator (included as submodule)
 - assimp (included as submodule)
+- stb_image (included as submodule)
 - entt (Included)
 
 If CMake fails to find Vulkan and you have the Vulkan SDK installed, you may need to add the below lines to the top of CMakeLists.txt:
