@@ -60,18 +60,16 @@ void processMesh(aiMesh *mesh, const std::string &name) {
   Renderer::loadMesh(name, vertices, indices);
 }
 
-std::vector<std::string> loadTextures(const std::string &name,
-                                      const std::string &directory,
-                                      aiMaterial *mat, aiTextureType type,
-                                      const std::string &typeName) {
+std::vector<std::string> loadTextures(const std::string &directory,
+                                      aiMaterial *mat, aiTextureType type) {
   std::vector<std::string> textures;
   textures.reserve(mat->GetTextureCount(type));
   for (uint32_t i = 0; i < mat->GetTextureCount(type); i++) {
     aiString path;
     mat->GetTexture(type, i, &path);
-    Renderer::loadTexture(name + typeName + std::to_string(i),
+    Renderer::loadTexture(directory + std::string(path.C_Str()),
                           directory + std::string(path.C_Str()));
-    textures.emplace_back(name + typeName + std::to_string(i));
+    textures.emplace_back(directory + std::string(path.C_Str()));
   }
 
   return textures;
@@ -90,8 +88,8 @@ void processNode(const aiNode *node, const aiScene *scene,
     meshes.push_back(mesh_name);
     aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
     if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
-      std::vector<std::string> texs = loadTextures(
-          name, directory, material, aiTextureType_DIFFUSE, "diffuse");
+      std::vector<std::string> texs =
+          loadTextures(directory, material, aiTextureType_DIFFUSE);
       textures.insert(textures.end(), texs.begin(), texs.end());
     } else {
       ASH_INFO("Using backup texture");
@@ -106,9 +104,9 @@ void processNode(const aiNode *node, const aiScene *scene,
 bool importModel(const std::string &name, const std::string &file) {
   Assimp::Importer importer;
 
-  const aiScene *scene =
-      importer.ReadFile(file, aiProcess_Triangulate | aiProcess_PreTransformVertices |
-                                  aiProcess_OptimizeMeshes);
+  const aiScene *scene = importer.ReadFile(
+      file, aiProcess_Triangulate | aiProcess_PreTransformVertices |
+                aiProcess_OptimizeMeshes | aiProcess_FlipUVs);
 
 #ifdef ASH_WINDOWS
   char separator = '\\';
