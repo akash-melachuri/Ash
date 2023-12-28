@@ -3,18 +3,12 @@
 #include <Components.h>
 #include <Scene.h>
 
+#include <assimp/postprocess.h>
 #include <chrono>
 #include <glm/ext/scalar_constants.hpp>
 
 GameLayer::GameLayer() {}
 GameLayer::~GameLayer() {}
-
-const std::vector<Vertex> vertices = {{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f}},
-                                      {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f}},
-                                      {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f}},
-                                      {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f}}};
-
-const std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
 
 std::shared_ptr<Scene> scene;
 
@@ -38,19 +32,11 @@ std::pair<int, int> last_mouse_pos{};
 void GameLayer::init() {
   scene = std::make_shared<Scene>();
 
-  Renderer::loadMesh("Quad", vertices, indices);
-  Renderer::loadTexture("statue", "assets/textures/texture.jpg");
-
-  std::vector<std::string> meshes = {"Quad"};
-  std::vector<std::string> textures = {"statue"};
-  Renderer::loadModel("Quad_statue", meshes, textures);
-
-  Helper::importModel("sponza",
-                      "assets/models/sponza/NewSponza_Main_glTF_002.gltf");
+  Helper::importModel("bp", "assets/models/backpack/backpack.obj");
 
   Entity e = scene->spawn();
-  scene->addComponent<Renderable>(e, "sponza", "main");
-  Transform transform{{10, 0, 0}};
+  scene->addComponent<Renderable>(e, "bp", "main");
+  Transform transform{{0, 0, 0}};
   scene->addComponent<Transform>(e, transform);
 
   Renderer::setScene(scene);

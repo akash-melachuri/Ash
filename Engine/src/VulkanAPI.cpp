@@ -7,8 +7,6 @@
 
 #include <stb_image.h>
 
-#include <chrono>
-
 #include "App.h"
 #include "Components.h"
 #include "Renderer.h"
@@ -837,9 +835,10 @@ void VulkanAPI::createUniformBuffers(std::vector<UniformBuffer> &ubos) {
   ubos.resize(swapchainImages.size());
 
   for (size_t i = 0; i < swapchainImages.size(); i++) {
-    createBuffer(bufferSize, VMA_MEMORY_USAGE_CPU_TO_GPU,
+    createBuffer(bufferSize, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, ubos[i].uniformBuffer,
-                 ubos[i].uniformBufferAllocation);
+                 ubos[i].uniformBufferAllocation,
+                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
   }
 }
 
@@ -1150,7 +1149,8 @@ void VulkanAPI::recreateSwapchain() {
 
 void VulkanAPI::createBuffer(VkDeviceSize size, VmaMemoryUsage memUsage,
                              VkBufferUsageFlags usage, VkBuffer &buffer,
-                             VmaAllocation &allocation) {
+                             VmaAllocation &allocation,
+                             VmaAllocationCreateFlags flags) {
   VkBufferCreateInfo bufferInfo{};
   bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   bufferInfo.size = size;
@@ -1159,6 +1159,7 @@ void VulkanAPI::createBuffer(VkDeviceSize size, VmaMemoryUsage memUsage,
 
   VmaAllocationCreateInfo allocationInfo{};
   allocationInfo.usage = memUsage;
+  allocationInfo.flags = flags;
 
   ASH_ASSERT(vmaCreateBuffer(allocator, &bufferInfo, &allocationInfo, &buffer,
                              &allocation, nullptr) == VK_SUCCESS,
@@ -1319,9 +1320,10 @@ void VulkanAPI::createTextureImage(const std::string &path, Texture &texture) {
   VkBuffer stagingBuffer;
   VmaAllocation stagingBufferAllocation;
 
-  createBuffer(imageSize, VMA_MEMORY_USAGE_CPU_ONLY,
+  createBuffer(imageSize, VMA_MEMORY_USAGE_AUTO,
                VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBuffer,
-               stagingBufferAllocation);
+               stagingBufferAllocation,
+               VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
   void *data;
   vmaMapMemory(allocator, stagingBufferAllocation, &data);
@@ -1330,7 +1332,7 @@ void VulkanAPI::createTextureImage(const std::string &path, Texture &texture) {
 
   stbi_image_free(pixels);
 
-  createImage(texWidth, texHeight, VMA_MEMORY_USAGE_GPU_ONLY,
+  createImage(texWidth, texHeight, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
               VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
               VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
               texture.image, texture.imageAllocation);
@@ -1642,7 +1644,8 @@ void VulkanAPI::createDepthResources() {
   VkFormat depthFormat = findDepthFormat();
 
   createImage(swapchainExtent.width, swapchainExtent.height,
-              VMA_MEMORY_USAGE_GPU_ONLY, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+              VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, depthFormat,
+              VK_IMAGE_TILING_OPTIMAL,
               VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, depthImage,
               depthImageAllocation);
   depthImageView =
@@ -1674,9 +1677,10 @@ VulkanAPI::createIndexedVertexArray(const std::vector<Vertex> &verts,
 
   VkBuffer stagingBuffer;
   VmaAllocation stagingBufferAllocation;
-  createBuffer(bufferSize, VMA_MEMORY_USAGE_CPU_ONLY,
+  createBuffer(bufferSize, VMA_MEMORY_USAGE_AUTO,
                VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBuffer,
-               stagingBufferAllocation);
+               stagingBufferAllocation,
+               VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
   void *data;
   vmaMapMemory(allocator, stagingBufferAllocation, &data);
@@ -1685,7 +1689,7 @@ VulkanAPI::createIndexedVertexArray(const std::vector<Vertex> &verts,
               static_cast<size_t>(indicesSize));
   vmaUnmapMemory(allocator, stagingBufferAllocation);
 
-  createBuffer(bufferSize, VMA_MEMORY_USAGE_GPU_ONLY,
+  createBuffer(bufferSize, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
                VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT,

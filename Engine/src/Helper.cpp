@@ -40,6 +40,9 @@ void processMesh(aiMesh *mesh, const std::string &name) {
       vertex.texCoord.x = mesh->mTextureCoords[0][i].x;
       vertex.texCoord.y = mesh->mTextureCoords[0][i].y;
     }
+    vertex.normal.x = mesh->mNormals[i].x;
+    vertex.normal.y = mesh->mNormals[i].y;
+    vertex.normal.z = mesh->mNormals[i].z;
     vertices.push_back(vertex);
   }
 
@@ -63,13 +66,12 @@ void processMesh(aiMesh *mesh, const std::string &name) {
 std::vector<std::string> loadTextures(const std::string &directory,
                                       aiMaterial *mat, aiTextureType type) {
   std::vector<std::string> textures;
-  textures.reserve(mat->GetTextureCount(type));
   for (uint32_t i = 0; i < mat->GetTextureCount(type); i++) {
     aiString path;
     mat->GetTexture(type, i, &path);
     Renderer::loadTexture(directory + std::string(path.C_Str()),
                           directory + std::string(path.C_Str()));
-    textures.emplace_back(directory + std::string(path.C_Str()));
+    textures.push_back(directory + std::string(path.C_Str()));
   }
 
   return textures;
@@ -83,15 +85,17 @@ void processNode(const aiNode *node, const aiScene *scene,
     std::string mesh_name = name + "_" + std::to_string(node->mMeshes[i]);
     if (Renderer::hasMesh(mesh_name))
       continue;
+
     aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
     processMesh(mesh, mesh_name);
     meshes.push_back(mesh_name);
     aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
-    if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
-      std::vector<std::string> texs =
-          loadTextures(directory, material, aiTextureType_DIFFUSE);
-      textures.insert(textures.end(), texs.begin(), texs.end());
-    } else {
+
+    std::vector<std::string> texs =
+        loadTextures(directory, material, aiTextureType_DIFFUSE);
+    textures.insert(textures.end(), texs.begin(), texs.end());
+
+    if (texs.empty()) {
       ASH_INFO("Using backup texture");
       textures.push_back("white");
     }
@@ -101,12 +105,13 @@ void processNode(const aiNode *node, const aiScene *scene,
     processNode(node->mChildren[i], scene, name, directory, meshes, textures);
 }
 
-bool importModel(const std::string &name, const std::string &file) {
+bool importModel(const std::string &name, const std::string &file,
+                 uint32_t flags) {
   Assimp::Importer importer;
 
   const aiScene *scene = importer.ReadFile(
-      file, aiProcess_Triangulate | aiProcess_PreTransformVertices |
-                aiProcess_OptimizeMeshes | aiProcess_FlipUVs);
+      file, flags | aiProcess_Triangulate | aiProcess_PreTransformVertices |
+                aiProcess_OptimizeMeshes);
 
 #ifdef ASH_WINDOWS
   char separator = '\\';
