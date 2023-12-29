@@ -30,7 +30,7 @@ struct Transform {
 
 struct Renderable {
     std::vector<UniformBuffer> ubos;
-    std::vector<std::vector<VkDescriptorSet>> descriptorSets;
+    std::vector<std::vector<vk::DescriptorSet>> descriptorSets;
 
     Renderable(const std::string& model, const std::string& pipeline)
         : model(model), pipeline(pipeline) {

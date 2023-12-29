@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vk_mem_alloc.h>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 #include <glm/glm.hpp>
 
@@ -12,7 +12,7 @@
 
 namespace Ash {
 struct UniformBuffer {
-  VkBuffer uniformBuffer;
+  vk::Buffer uniformBuffer;
   VmaAllocation uniformBufferAllocation;
 };
 
@@ -27,34 +27,22 @@ struct Vertex {
   glm::vec3 normal;
   glm::vec2 texCoord;
 
-  static VkVertexInputBindingDescription getBindingDescription() {
-    VkVertexInputBindingDescription bindingDescription{};
-
-    bindingDescription.binding = 0;
-    bindingDescription.stride = sizeof(Vertex);
-    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
+  static vk::VertexInputBindingDescription getBindingDescription() {
+    vk::VertexInputBindingDescription bindingDescription(
+        0, sizeof(Vertex), vk::VertexInputRate::eVertex);
     return bindingDescription;
   }
 
-  static std::array<VkVertexInputAttributeDescription, 3>
+  static std::array<vk::VertexInputAttributeDescription, 3>
   getAttributeDescription() {
-    std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions;
+    std::array<vk::VertexInputAttributeDescription, 3> attributeDescriptions;
 
-    attributeDescriptions[0].binding = 0;
-    attributeDescriptions[0].location = 0;
-    attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-    attributeDescriptions[1].binding = 0;
-    attributeDescriptions[1].location = 1;
-    attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[1].offset = offsetof(Vertex, normal);
-
-    attributeDescriptions[2].binding = 0;
-    attributeDescriptions[2].location = 2;
-    attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-    attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+    attributeDescriptions[0] = vk::VertexInputAttributeDescription(
+        0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, pos));
+    attributeDescriptions[1] = vk::VertexInputAttributeDescription(
+        1, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, normal));
+    attributeDescriptions[2] = vk::VertexInputAttributeDescription(
+        2, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, texCoord));
 
     return attributeDescriptions;
   }
@@ -62,9 +50,9 @@ struct Vertex {
 
 struct IndexedVertexBuffer {
   uint32_t numIndices;
-  VkDeviceSize vertSize;
+  vk::DeviceSize vertSize;
 
-  VkBuffer buffer;
+  vk::Buffer buffer;
   VmaAllocation bufferAllocation;
 };
 
@@ -77,9 +65,9 @@ struct Mesh {
 struct Texture {
   std::string name;
 
-  VkImage image;
+  vk::Image image;
   VmaAllocation imageAllocation;
-  VkImageView imageView;
+  vk::ImageView imageView;
 };
 
 struct Model {

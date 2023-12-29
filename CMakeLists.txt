@@ -69,6 +69,10 @@ if (WIN32)
     add_compile_definitions(ASH_WINDOWS)
 endif()
 
+if (CMAKE_BUILD_TYPE MATCHES DEBUG)
+    add_compile_definitions(ASH_DEBUG)
+endif()
+
 target_link_libraries(ash glfw)
 target_link_libraries(ash Vulkan::Vulkan)
 target_link_libraries(ash glm::glm)
