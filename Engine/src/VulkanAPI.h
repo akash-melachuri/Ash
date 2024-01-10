@@ -13,9 +13,9 @@
 #include <vector>
 
 #include "Core.h"
+#include "Descriptor.h"
 #include "Helper.h"
 #include "Pipeline.h"
-#include "Descriptor.h"
 
 #define VULKAN_VERSION VK_API_VERSION_1_3
 
@@ -88,8 +88,8 @@ private:
   void recreateSwapchain();
   void updateCommandBuffers();
   vk::Format findSupportedFormat(const std::vector<vk::Format> &candidates,
-                               vk::ImageTiling tiling,
-                               vk::FormatFeatureFlags features);
+                                 vk::ImageTiling tiling,
+                                 vk::FormatFeatureFlags features);
   bool hasStencilComponent(vk::Format format);
   vk::Format findDepthFormat();
   void createDepthResources();
@@ -102,14 +102,16 @@ private:
                    vk::ImageUsageFlags usage, vk::Image &image,
                    VmaAllocation &allocation);
   vk::ImageView createImageView(vk::Image image, vk::Format format,
-                              vk::ImageAspectFlags aspectFlags);
-  void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
+                                vk::ImageAspectFlags aspectFlags);
+  void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer,
+                  vk::DeviceSize size);
   void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width,
                          uint32_t height);
   void updateUniformBuffers(uint32_t currentImage);
   void createTextureSampler();
   void transitionImageLayout(vk::Image image, vk::Format format,
-                             vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+                             vk::ImageLayout oldLayout,
+                             vk::ImageLayout newLayout);
 
   SwapchainSupportDetails querySwapchainSupport(vk::PhysicalDevice device);
   vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
