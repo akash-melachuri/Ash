@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.5)
 
 function(add_shader TARGET SHADER)
     find_program(GLSLC glslc /usr/bin/)
