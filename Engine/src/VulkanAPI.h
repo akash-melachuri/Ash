@@ -15,6 +15,7 @@
 #include "Core.h"
 #include "Helper.h"
 #include "Pipeline.h"
+#include "Descriptor.h"
 
 #define VULKAN_VERSION VK_API_VERSION_1_3
 
@@ -42,6 +43,9 @@ public:
   void createUniformBuffers(std::vector<UniformBuffer> &ubos);
   void createTextureImage(const std::string &path, Texture &texture);
   void createTextureImageView(Texture &texture);
+
+  DescriptorLayoutCache descriptorLayoutCache;
+  DescriptorAllocator descriptorAllocator;
 
 private:
   struct QueueFamilyIndices {
@@ -75,7 +79,7 @@ private:
   void createPipelineCache();
   void createGraphicsPipelines(const std::vector<Pipeline> &pipelines);
   void createFramebuffers();
-  void createDescriptorPool(uint32_t maxSets);
+  void initializeDescriptorAllocator();
   void createCommandPools();
   void createCommandBuffers();
   void recordCommandBuffers();
@@ -151,8 +155,6 @@ private:
 
   vk::DescriptorSetLayout descriptorSetLayout;
   vk::PipelineLayout pipelineLayout;
-
-  vk::DescriptorPool descriptorPool;
 
   vk::PipelineCache pipelineCache;
   std::unordered_map<std::string, vk::Pipeline> graphicsPipelines;
