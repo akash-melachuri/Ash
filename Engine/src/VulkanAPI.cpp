@@ -442,6 +442,9 @@ void VulkanAPI::createRenderPass() {
 
 void VulkanAPI::createDescriptorSetLayout() {
   ASH_INFO("Creating descriptor set layout");
+
+  descriptorLayoutCache.init(device);
+
   vk::DescriptorSetLayoutBinding uboLayoutBinding(
       0, vk::DescriptorType::eUniformBuffer, 1,
       vk::ShaderStageFlagBits::eVertex);
@@ -455,7 +458,8 @@ void VulkanAPI::createDescriptorSetLayout() {
 
   vk::DescriptorSetLayoutCreateInfo layoutInfo({}, bindings);
 
-  descriptorSetLayout = device.createDescriptorSetLayout(layoutInfo);
+  descriptorSetLayout =
+      descriptorLayoutCache.create_descriptor_layout(layoutInfo);
 }
 
 void VulkanAPI::createPipelineCache() {
@@ -630,33 +634,18 @@ void VulkanAPI::createUniformBuffers(std::vector<UniformBuffer> &ubos) {
   }
 }
 
-void VulkanAPI::createDescriptorPool(uint32_t maxSets) {
-  ASH_INFO("Creating descriptor pool");
+void VulkanAPI::initializeDescriptorAllocator() {
+  ASH_INFO("Initializing descriptor allocator");
 
-  std::array<vk::DescriptorPoolSize, 2> poolSizes{};
-  poolSizes[0] = vk::DescriptorPoolSize(
-      vk::DescriptorType::eUniformBuffer,
-      static_cast<uint32_t>(swapchainImages.size() * maxSets));
-  poolSizes[1] =
-      vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler,
-                             static_cast<uint32_t>(swapchainImages.size()));
-
-  vk::DescriptorPoolCreateInfo poolInfo(
-      {}, static_cast<uint32_t>(swapchainImages.size() * maxSets), poolSizes);
-
-  descriptorPool = device.createDescriptorPool(poolInfo);
+  descriptorAllocator.init(device);
 }
 
 void VulkanAPI::createDescriptorSets(std::vector<vk::DescriptorSet> &sets,
                                      const std::vector<UniformBuffer> &ubo,
                                      const Texture &texture) {
   ASH_INFO("Creating descriptor sets");
-  std::vector<vk::DescriptorSetLayout> layouts(swapchainImages.size(),
-                                               descriptorSetLayout);
-  vk::DescriptorSetAllocateInfo allocInfo(descriptorPool, layouts);
 
-  sets = device.allocateDescriptorSets(allocInfo);
-
+  sets.resize(swapchainImages.size());
   for (size_t i = 0; i < swapchainImages.size(); i++) {
     vk::DescriptorBufferInfo bufferInfo(ubo[i].uniformBuffer, 0,
                                         sizeof(UniformBufferObject));
@@ -664,15 +653,13 @@ void VulkanAPI::createDescriptorSets(std::vector<vk::DescriptorSet> &sets,
     vk::DescriptorImageInfo imageInfo(textureSampler, texture.imageView,
                                       vk::ImageLayout::eShaderReadOnlyOptimal);
 
-    std::array<vk::WriteDescriptorSet, 2> descriptorWrites{
-        vk::WriteDescriptorSet(sets[i], 0, 0,
-                               vk::DescriptorType::eUniformBuffer, nullptr,
-                               bufferInfo),
-        vk::WriteDescriptorSet(sets[i], 1, 0,
-                               vk::DescriptorType::eCombinedImageSampler,
-                               imageInfo)};
-
-    device.updateDescriptorSets(descriptorWrites, {});
+    DescriptorBuilder::begin(&Renderer::getAPI()->descriptorLayoutCache,
+                             &Renderer::getAPI()->descriptorAllocator)
+        .bind_buffer(0, &bufferInfo, vk::DescriptorType::eUniformBuffer,
+                     vk::ShaderStageFlagBits::eVertex)
+        .bind_image(1, &imageInfo, vk::DescriptorType::eCombinedImageSampler,
+                    vk::ShaderStageFlagBits::eFragment)
+        .build(sets[i]);
   }
 }
 
@@ -819,8 +806,6 @@ void VulkanAPI::cleanupSwapchain() {
     device.destroyImageView(imageView);
 
   device.destroySwapchainKHR(swapchain);
-
-  device.destroyDescriptorPool(descriptorPool);
 }
 
 void VulkanAPI::recreateSwapchain() {
@@ -842,21 +827,6 @@ void VulkanAPI::recreateSwapchain() {
   createRenderPass();
   createDepthResources();
   createFramebuffers();
-  createDescriptorPool(MAX_DESCRIPTOR_SETS);
-
-  std::shared_ptr<Scene> scene = Renderer::getScene();
-  auto renderables = scene->registry.view<Renderable>();
-  for (auto entity : renderables) {
-    auto &renderable = renderables.get(entity);
-    for (uint32_t i = 0; i < Renderer::getModel(renderable.model).meshes.size();
-         i++) {
-      createDescriptorSets(
-          renderable.descriptorSets[i], renderable.ubos,
-          Renderer::getTexture(
-              Renderer::getModel(renderable.model).textures[i]));
-    }
-  }
-
   createCommandBuffers();
 }
 
@@ -1097,9 +1067,10 @@ void VulkanAPI::init(const std::vector<Pipeline> &pipelines) {
   createImageViews();
   createRenderPass();
   createPipelineCache();
+
   createDescriptorSetLayout();
   createGraphicsPipelines(pipelines);
-  createDescriptorPool(MAX_DESCRIPTOR_SETS);
+  initializeDescriptorAllocator();
   createCommandPools();
   createDepthResources();
   createFramebuffers();
@@ -1180,16 +1151,15 @@ void VulkanAPI::render() {
   vk::PresentInfoKHR presentInfo(renderFinishedSemaphores[currentFrame],
                                  swapchain, imageIndex);
 
-  result = presentQueue.presentKHR(presentInfo);
-
-  if (result == vk::Result::eErrorOutOfDateKHR ||
-      result == vk::Result::eSuboptimalKHR ||
-      App::getWindow()->framebufferResized) {
-    App::getWindow()->framebufferResized = false;
-    recreateSwapchain();
-  } else {
-    ASH_ASSERT(result == vk::Result::eSuccess,
-               "Failed to present swapchain image");
+  try {
+    result = presentQueue.presentKHR(presentInfo);
+  } catch (std::exception const &e) {
+    if (result == vk::Result::eErrorOutOfDateKHR ||
+        result == vk::Result::eSuboptimalKHR ||
+        App::getWindow()->framebufferResized) {
+      App::getWindow()->framebufferResized = false;
+      recreateSwapchain();
+    }
   }
 
   currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -1228,7 +1198,8 @@ void VulkanAPI::cleanup() {
     }
   }
 
-  device.destroyDescriptorSetLayout(descriptorSetLayout);
+  descriptorLayoutCache.cleanup();
+  descriptorAllocator.cleanup();
 
   for (IndexedVertexBuffer ivb : indexedVertexBuffers) {
     vmaDestroyBuffer(allocator, ivb.buffer, ivb.bufferAllocation);

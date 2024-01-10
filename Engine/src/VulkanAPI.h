@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "Core.h"
+#include "Descriptor.h"
 #include "Helper.h"
 #include "Pipeline.h"
 
@@ -42,6 +43,9 @@ public:
   void createUniformBuffers(std::vector<UniformBuffer> &ubos);
   void createTextureImage(const std::string &path, Texture &texture);
   void createTextureImageView(Texture &texture);
+
+  DescriptorLayoutCache descriptorLayoutCache;
+  DescriptorAllocator descriptorAllocator;
 
 private:
   struct QueueFamilyIndices {
@@ -75,7 +79,7 @@ private:
   void createPipelineCache();
   void createGraphicsPipelines(const std::vector<Pipeline> &pipelines);
   void createFramebuffers();
-  void createDescriptorPool(uint32_t maxSets);
+  void initializeDescriptorAllocator();
   void createCommandPools();
   void createCommandBuffers();
   void recordCommandBuffers();
@@ -84,8 +88,8 @@ private:
   void recreateSwapchain();
   void updateCommandBuffers();
   vk::Format findSupportedFormat(const std::vector<vk::Format> &candidates,
-                               vk::ImageTiling tiling,
-                               vk::FormatFeatureFlags features);
+                                 vk::ImageTiling tiling,
+                                 vk::FormatFeatureFlags features);
   bool hasStencilComponent(vk::Format format);
   vk::Format findDepthFormat();
   void createDepthResources();
@@ -98,14 +102,16 @@ private:
                    vk::ImageUsageFlags usage, vk::Image &image,
                    VmaAllocation &allocation);
   vk::ImageView createImageView(vk::Image image, vk::Format format,
-                              vk::ImageAspectFlags aspectFlags);
-  void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
+                                vk::ImageAspectFlags aspectFlags);
+  void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer,
+                  vk::DeviceSize size);
   void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width,
                          uint32_t height);
   void updateUniformBuffers(uint32_t currentImage);
   void createTextureSampler();
   void transitionImageLayout(vk::Image image, vk::Format format,
-                             vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+                             vk::ImageLayout oldLayout,
+                             vk::ImageLayout newLayout);
 
   SwapchainSupportDetails querySwapchainSupport(vk::PhysicalDevice device);
   vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
@@ -151,8 +157,6 @@ private:
 
   vk::DescriptorSetLayout descriptorSetLayout;
   vk::PipelineLayout pipelineLayout;
-
-  vk::DescriptorPool descriptorPool;
 
   vk::PipelineCache pipelineCache;
   std::unordered_map<std::string, vk::Pipeline> graphicsPipelines;
