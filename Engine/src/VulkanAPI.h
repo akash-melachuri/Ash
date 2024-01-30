@@ -37,10 +37,11 @@ public:
   IndexedVertexBuffer
   createIndexedVertexArray(const std::vector<Vertex> &verts,
                            const std::vector<uint32_t> &indices);
-  void createDescriptorSets(std::vector<vk::DescriptorSet> &sets,
-                            const std::vector<UniformBuffer> &ubo,
-                            const Texture &texture);
-  void createUniformBuffers(std::vector<UniformBuffer> &ubos);
+  void createRenderableDescriptorSets(std::vector<vk::DescriptorSet> &sets,
+                                      const std::vector<UniformBuffer> &ubo,
+                                      const Texture &texture);
+  void createUniformBuffers(std::vector<UniformBuffer> &ubos,
+                            vk::DeviceSize bufferSize);
   void createTextureImage(const std::string &path, Texture &texture);
   void createTextureImageView(Texture &texture);
 
@@ -75,11 +76,12 @@ private:
   void createSwapchain();
   void createImageViews();
   void createRenderPass();
-  void createDescriptorSetLayout();
+  void createDescriptorSetLayouts();
   void createPipelineCache();
+  void createGlobalDescriptorSets();
   void createGraphicsPipelines(const std::vector<Pipeline> &pipelines);
   void createFramebuffers();
-  void initializeDescriptorAllocator();
+  void createDescriptorAllocator();
   void createCommandPools();
   void createCommandBuffers();
   void recordCommandBuffers();
@@ -155,7 +157,10 @@ private:
 
   vk::RenderPass renderPass;
 
-  vk::DescriptorSetLayout descriptorSetLayout;
+  std::vector<UniformBuffer> globalUniformBuffers;
+  std::vector<vk::DescriptorSet> globalDescriptorSets;
+
+  std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
   vk::PipelineLayout pipelineLayout;
 
   vk::PipelineCache pipelineCache;

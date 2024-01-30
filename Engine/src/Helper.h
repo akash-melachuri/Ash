@@ -8,18 +8,20 @@
 #include <array>
 #include <vector>
 
-#include "ashpch.h"
-
 namespace Ash {
+
 struct UniformBuffer {
   vk::Buffer uniformBuffer;
   VmaAllocation uniformBufferAllocation;
 };
 
-struct UniformBufferObject {
-  glm::mat4 model;
+struct GlobalBufferObject {
   glm::mat4 view;
   glm::mat4 proj;
+};
+
+struct RenderableBufferObject {
+  glm::mat4 model;
 };
 
 struct Vertex {
