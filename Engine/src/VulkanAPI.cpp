@@ -440,26 +440,38 @@ void VulkanAPI::createRenderPass() {
   renderPass = device.createRenderPass(renderPassInfo);
 }
 
-void VulkanAPI::createDescriptorSetLayout() {
+void VulkanAPI::createDescriptorSetLayouts() {
   ASH_INFO("Creating descriptor set layout");
 
   descriptorLayoutCache.init(device);
 
-  vk::DescriptorSetLayoutBinding uboLayoutBinding(
+  vk::DescriptorSetLayoutBinding gboLayoutBinding(
       0, vk::DescriptorType::eUniformBuffer, 1,
       vk::ShaderStageFlagBits::eVertex);
 
-  vk::DescriptorSetLayoutBinding samplerLayoutBinding(
+  std::array<vk::DescriptorSetLayoutBinding, 1> globalBindings = {
+      gboLayoutBinding};
+
+  vk::DescriptorSetLayoutCreateInfo globalLayoutInfo({}, globalBindings);
+
+  vk::DescriptorSetLayoutBinding objectUboLayoutBinding(
+      0, vk::DescriptorType::eUniformBuffer, 1,
+      vk::ShaderStageFlagBits::eVertex);
+
+  vk::DescriptorSetLayoutBinding objectSamplerLayoutBinding(
       1, vk::DescriptorType::eCombinedImageSampler, 1,
       vk::ShaderStageFlagBits::eFragment);
 
-  std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {
-      uboLayoutBinding, samplerLayoutBinding};
+  std::array<vk::DescriptorSetLayoutBinding, 2> objectBindings = {
+      objectUboLayoutBinding, objectSamplerLayoutBinding};
 
-  vk::DescriptorSetLayoutCreateInfo layoutInfo({}, bindings);
+  vk::DescriptorSetLayoutCreateInfo objectLayoutInfo({}, objectBindings);
 
-  descriptorSetLayout =
-      descriptorLayoutCache.create_descriptor_layout(layoutInfo);
+  descriptorSetLayouts.push_back(
+      descriptorLayoutCache.create_descriptor_layout(globalLayoutInfo));
+
+  descriptorSetLayouts.push_back(
+      descriptorLayoutCache.create_descriptor_layout(objectLayoutInfo));
 }
 
 void VulkanAPI::createPipelineCache() {
@@ -527,7 +539,7 @@ void VulkanAPI::createGraphicsPipelines(
 
   vk::PipelineDynamicStateCreateInfo dynamicState({}, dynamicStates);
 
-  vk::PipelineLayoutCreateInfo pipelineLayoutInfo({}, descriptorSetLayout);
+  vk::PipelineLayoutCreateInfo pipelineLayoutInfo({}, descriptorSetLayouts);
 
   pipelineLayout = device.createPipelineLayout(pipelineLayoutInfo);
 
@@ -619,11 +631,8 @@ void VulkanAPI::createFramebuffers() {
   }
 }
 
-void VulkanAPI::createUniformBuffers(std::vector<UniformBuffer> &ubos) {
-  ASH_INFO("Creating uniform buffers");
-
-  vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
-
+void VulkanAPI::createUniformBuffers(std::vector<UniformBuffer> &ubos,
+                                     vk::DeviceSize bufferSize) {
   ubos.resize(swapchainImages.size());
 
   for (size_t i = 0; i < swapchainImages.size(); i++) {
@@ -634,21 +643,36 @@ void VulkanAPI::createUniformBuffers(std::vector<UniformBuffer> &ubos) {
   }
 }
 
-void VulkanAPI::initializeDescriptorAllocator() {
-  ASH_INFO("Initializing descriptor allocator");
+void VulkanAPI::createDescriptorAllocator() {
+  ASH_INFO("Creating descriptor allocator");
 
   descriptorAllocator.init(device);
 }
+void VulkanAPI::createGlobalDescriptorSets() {
+  ASH_INFO("Creating global descriptor set for objects");
 
-void VulkanAPI::createDescriptorSets(std::vector<vk::DescriptorSet> &sets,
-                                     const std::vector<UniformBuffer> &ubo,
-                                     const Texture &texture) {
-  ASH_INFO("Creating descriptor sets");
+  globalDescriptorSets.resize(swapchainImages.size());
+  for (size_t i = 0; i < swapchainImages.size(); i++) {
+    vk::DescriptorBufferInfo bufferInfo(globalUniformBuffers[i].uniformBuffer,
+                                        0, sizeof(GlobalBufferObject));
+
+    DescriptorBuilder::begin(&Renderer::getAPI()->descriptorLayoutCache,
+                             &Renderer::getAPI()->descriptorAllocator)
+        .bind_buffer(0, &bufferInfo, vk::DescriptorType::eUniformBuffer,
+                     vk::ShaderStageFlagBits::eVertex)
+        .build(globalDescriptorSets[i]);
+  }
+}
+
+void VulkanAPI::createRenderableDescriptorSets(
+    std::vector<vk::DescriptorSet> &sets, const std::vector<UniformBuffer> &ubo,
+    const Texture &texture) {
+  ASH_INFO("Creating descriptor sets for objects");
 
   sets.resize(swapchainImages.size());
   for (size_t i = 0; i < swapchainImages.size(); i++) {
     vk::DescriptorBufferInfo bufferInfo(ubo[i].uniformBuffer, 0,
-                                        sizeof(UniformBufferObject));
+                                        sizeof(RenderableBufferObject));
 
     vk::DescriptorImageInfo imageInfo(textureSampler, texture.imageView,
                                       vk::ImageLayout::eShaderReadOnlyOptimal);
@@ -729,6 +753,9 @@ void VulkanAPI::recordCommandBuffers() {
 
     commandBuffers[i].setViewport(0, viewport);
     commandBuffers[i].setScissor(0, scissor);
+    commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                                         pipelineLayout, 0,
+                                         globalDescriptorSets[i], {});
 
     vk::DeviceSize offsets[] = {0};
 
@@ -758,7 +785,7 @@ void VulkanAPI::recordCommandBuffers() {
           // Each entity has their own transform and thus their own
           // UBO transform matrix
           commandBuffers[i].bindDescriptorSets(
-              vk::PipelineBindPoint::eGraphics, pipelineLayout, 0,
+              vk::PipelineBindPoint::eGraphics, pipelineLayout, 1,
               renderable.descriptorSets[j][i], {});
 
           commandBuffers[i].drawIndexed(mesh.ivb.numIndices, 1, 0, 0, 0);
@@ -1067,10 +1094,11 @@ void VulkanAPI::init(const std::vector<Pipeline> &pipelines) {
   createImageViews();
   createRenderPass();
   createPipelineCache();
-
-  createDescriptorSetLayout();
+  createUniformBuffers(globalUniformBuffers, sizeof(GlobalBufferObject));
+  createDescriptorSetLayouts();
   createGraphicsPipelines(pipelines);
-  initializeDescriptorAllocator();
+  createDescriptorAllocator();
+  createGlobalDescriptorSets();
   createCommandPools();
   createDepthResources();
   createFramebuffers();
@@ -1080,15 +1108,24 @@ void VulkanAPI::init(const std::vector<Pipeline> &pipelines) {
 }
 
 void VulkanAPI::updateUniformBuffers(uint32_t currentImage) {
-  UniformBufferObject ubo{};
-  ubo.model = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-  ubo.view = Renderer::getCamera().getView();
-  ubo.proj =
+  GlobalBufferObject gbo{};
+  gbo.view = Renderer::getCamera().getView();
+  gbo.proj =
       glm::perspective(glm::radians(Renderer::getCamera().fov),
                        swapchainExtent.width / (float)swapchainExtent.height,
                        Renderer::getCamera().near, Renderer::getCamera().far);
+  gbo.proj[1][1] *= -1;
 
-  ubo.proj[1][1] *= -1;
+  void *data;
+  vmaMapMemory(allocator,
+               globalUniformBuffers[currentImage].uniformBufferAllocation,
+               &data);
+  std::memcpy(data, &gbo, sizeof(gbo));
+  vmaUnmapMemory(allocator,
+                 globalUniformBuffers[currentImage].uniformBufferAllocation);
+
+  RenderableBufferObject ubo{};
+  ubo.model = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 
   std::shared_ptr<Scene> scene = Renderer::getScene();
   if (scene) {
@@ -1197,6 +1234,10 @@ void VulkanAPI::cleanup() {
       }
     }
   }
+
+  for (auto buffer : globalUniformBuffers)
+    vmaDestroyBuffer(allocator, buffer.uniformBuffer,
+                     buffer.uniformBufferAllocation);
 
   descriptorLayoutCache.cleanup();
   descriptorAllocator.cleanup();

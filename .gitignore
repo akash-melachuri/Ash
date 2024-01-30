@@ -1,6 +1,7 @@
 Debug/
 Release/
 build/
+assets/models/
 .cache/
 .clangd/
 .ccls
