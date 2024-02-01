@@ -35,7 +35,7 @@ public:
 
   static void loadModel(const std::string &name,
                         const std::vector<std::string> &meshes,
-                        const std::vector<std::string> &textures);
+                        const std::vector<Material> &materials);
 
   static void loadMesh(const std::string &name,
                        const std::vector<Vertex> &verts,

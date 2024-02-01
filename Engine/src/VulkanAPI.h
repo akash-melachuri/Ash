@@ -39,7 +39,7 @@ public:
                            const std::vector<uint32_t> &indices);
   void createRenderableDescriptorSets(std::vector<vk::DescriptorSet> &sets,
                                       const std::vector<UniformBuffer> &ubo,
-                                      const Texture &texture);
+                                      Material &material);
   void createUniformBuffers(std::vector<UniformBuffer> &ubos,
                             vk::DeviceSize bufferSize);
   void createTextureImage(const std::string &path, Texture &texture);

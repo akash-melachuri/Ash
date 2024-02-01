@@ -6,7 +6,7 @@ layout (binding = 0, set = 0) uniform GlobalBufferObject {
     mat4 proj;
 } gbo;
 
-layout (binding = 0, set = 1) uniform UniformBufferObject {
+layout (binding = 0, set = 2) uniform UniformBufferObject {
     mat4 model;
 } ubo;
 

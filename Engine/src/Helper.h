@@ -72,11 +72,17 @@ struct Texture {
   vk::ImageView imageView;
 };
 
+struct Material {
+  std::string diffuse;
+
+  std::vector<vk::DescriptorSet> sets;
+};
+
 struct Model {
   std::string name;
 
   std::vector<std::string> meshes;
-  std::vector<std::string> textures;
+  std::vector<Material> materials;
 };
 
 namespace Helper {

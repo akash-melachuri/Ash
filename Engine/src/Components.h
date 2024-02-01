@@ -39,8 +39,7 @@ struct Renderable {
     descriptorSets.resize(Renderer::getModel(model).meshes.size());
     for (uint32_t i = 0; i < Renderer::getModel(model).meshes.size(); i++) {
       Renderer::getAPI()->createRenderableDescriptorSets(
-          descriptorSets[i], ubos,
-          Renderer::getTexture(Renderer::getModel(model).textures[i]));
+          descriptorSets[i], ubos, Renderer::getModel(model).materials[i]);
     }
   }
 

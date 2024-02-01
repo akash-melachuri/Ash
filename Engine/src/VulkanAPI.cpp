@@ -454,21 +454,29 @@ void VulkanAPI::createDescriptorSetLayouts() {
 
   vk::DescriptorSetLayoutCreateInfo globalLayoutInfo({}, globalBindings);
 
+  vk::DescriptorSetLayoutBinding materialDiffuseSamplerLayoutBinding(
+      0, vk::DescriptorType::eCombinedImageSampler, 1,
+      vk::ShaderStageFlagBits::eFragment);
+
+  std::array<vk::DescriptorSetLayoutBinding, 1> materialBindings = {
+      materialDiffuseSamplerLayoutBinding};
+
+  vk::DescriptorSetLayoutCreateInfo materialLayoutInfo({}, materialBindings);
+
   vk::DescriptorSetLayoutBinding objectUboLayoutBinding(
       0, vk::DescriptorType::eUniformBuffer, 1,
       vk::ShaderStageFlagBits::eVertex);
 
-  vk::DescriptorSetLayoutBinding objectSamplerLayoutBinding(
-      1, vk::DescriptorType::eCombinedImageSampler, 1,
-      vk::ShaderStageFlagBits::eFragment);
-
-  std::array<vk::DescriptorSetLayoutBinding, 2> objectBindings = {
-      objectUboLayoutBinding, objectSamplerLayoutBinding};
+  std::array<vk::DescriptorSetLayoutBinding, 1> objectBindings = {
+      objectUboLayoutBinding};
 
   vk::DescriptorSetLayoutCreateInfo objectLayoutInfo({}, objectBindings);
 
   descriptorSetLayouts.push_back(
       descriptorLayoutCache.create_descriptor_layout(globalLayoutInfo));
+
+  descriptorSetLayouts.push_back(
+      descriptorLayoutCache.create_descriptor_layout(materialLayoutInfo));
 
   descriptorSetLayouts.push_back(
       descriptorLayoutCache.create_descriptor_layout(objectLayoutInfo));
@@ -666,24 +674,30 @@ void VulkanAPI::createGlobalDescriptorSets() {
 
 void VulkanAPI::createRenderableDescriptorSets(
     std::vector<vk::DescriptorSet> &sets, const std::vector<UniformBuffer> &ubo,
-    const Texture &texture) {
-  ASH_INFO("Creating descriptor sets for objects");
+    Material &material) {
+  ASH_INFO("Creating descriptor sets for objects and their materials");
 
   sets.resize(swapchainImages.size());
+  material.sets.resize(swapchainImages.size());
   for (size_t i = 0; i < swapchainImages.size(); i++) {
     vk::DescriptorBufferInfo bufferInfo(ubo[i].uniformBuffer, 0,
                                         sizeof(RenderableBufferObject));
-
-    vk::DescriptorImageInfo imageInfo(textureSampler, texture.imageView,
-                                      vk::ImageLayout::eShaderReadOnlyOptimal);
 
     DescriptorBuilder::begin(&Renderer::getAPI()->descriptorLayoutCache,
                              &Renderer::getAPI()->descriptorAllocator)
         .bind_buffer(0, &bufferInfo, vk::DescriptorType::eUniformBuffer,
                      vk::ShaderStageFlagBits::eVertex)
-        .bind_image(1, &imageInfo, vk::DescriptorType::eCombinedImageSampler,
-                    vk::ShaderStageFlagBits::eFragment)
         .build(sets[i]);
+
+    vk::DescriptorImageInfo imageInfo(
+        textureSampler, Renderer::getTexture(material.diffuse).imageView,
+        vk::ImageLayout::eShaderReadOnlyOptimal);
+
+    DescriptorBuilder::begin(&Renderer::getAPI()->descriptorLayoutCache,
+                             &Renderer::getAPI()->descriptorAllocator)
+        .bind_image(0, &imageInfo, vk::DescriptorType::eCombinedImageSampler,
+                    vk::ShaderStageFlagBits::eFragment)
+        .build(material.sets[i]);
   }
 }
 
@@ -771,6 +785,10 @@ void VulkanAPI::recordCommandBuffers() {
           Mesh &mesh = Renderer::getMesh(model.meshes[j]);
           vk::Buffer vb[] = {mesh.ivb.buffer};
 
+          commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                                               pipelineLayout, 1,
+                                               model.materials[j].sets[i], {});
+
           // Each model should have their own pipeline
           commandBuffers[i].bindPipeline(
               vk::PipelineBindPoint::eGraphics,
@@ -785,7 +803,7 @@ void VulkanAPI::recordCommandBuffers() {
           // Each entity has their own transform and thus their own
           // UBO transform matrix
           commandBuffers[i].bindDescriptorSets(
-              vk::PipelineBindPoint::eGraphics, pipelineLayout, 1,
+              vk::PipelineBindPoint::eGraphics, pipelineLayout, 2,
               renderable.descriptorSets[j][i], {});
 
           commandBuffers[i].drawIndexed(mesh.ivb.numIndices, 1, 0, 0, 0);

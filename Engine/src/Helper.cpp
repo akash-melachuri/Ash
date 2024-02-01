@@ -80,7 +80,7 @@ std::vector<std::string> loadTextures(const std::string &directory,
 void processNode(const aiNode *node, const aiScene *scene,
                  const std::string &name, const std::string &directory,
                  std::vector<std::string> &meshes,
-                 std::vector<std::string> &textures) {
+                 std::vector<std::string> &diffuseTextures) {
   for (uint32_t i = 0; i < node->mNumMeshes; i++) {
     std::string mesh_name = name + "_" + std::to_string(node->mMeshes[i]);
     if (Renderer::hasMesh(mesh_name))
@@ -93,16 +93,16 @@ void processNode(const aiNode *node, const aiScene *scene,
 
     std::vector<std::string> texs =
         loadTextures(directory, material, aiTextureType_DIFFUSE);
-    textures.insert(textures.end(), texs.begin(), texs.end());
+    diffuseTextures.insert(diffuseTextures.end(), texs.begin(), texs.end());
 
     if (texs.empty()) {
       ASH_INFO("Using backup texture");
-      textures.push_back("white");
+      diffuseTextures.push_back("white");
     }
   }
 
   for (uint32_t i = 0; i < node->mNumChildren; i++)
-    processNode(node->mChildren[i], scene, name, directory, meshes, textures);
+    processNode(node->mChildren[i], scene, name, directory, meshes, diffuseTextures);
 }
 
 bool importModel(const std::string &name, const std::string &file,
@@ -124,10 +124,15 @@ bool importModel(const std::string &name, const std::string &file,
   ASH_ASSERT(scene, "Failed to import mesh {}", file);
 
   std::vector<std::string> meshes;
-  std::vector<std::string> textures;
+  std::vector<std::string> diffuseTextures;
   Helper::processNode(scene->mRootNode, scene, name, directory, meshes,
-                      textures);
-  Renderer::loadModel(name, meshes, textures);
+                      diffuseTextures);
+
+  std::vector<Material> materials(diffuseTextures.size());
+  for (uint32_t i = 0; i < diffuseTextures.size(); i++)
+    materials[i].diffuse = diffuseTextures[i];
+
+  Renderer::loadModel(name, meshes, materials);
 
   return true;
 }

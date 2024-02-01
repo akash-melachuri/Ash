@@ -12,8 +12,8 @@ Camera Renderer::camera;
 
 void Renderer::loadModel(const std::string &name,
                          const std::vector<std::string> &meshes,
-                         const std::vector<std::string> &textures) {
-  models[name] = {name, meshes, textures};
+                         const std::vector<Material> &materials) {
+  models[name] = {name, meshes, materials};
 }
 
 void Renderer::loadPipeline(const Pipeline &pipeline) {
