@@ -20,6 +20,11 @@ struct GlobalBufferObject {
   glm::mat4 proj;
 };
 
+struct LightBufferObject {
+    glm::vec4 pos;
+    glm::vec4 color;
+};
+
 struct RenderableBufferObject {
   glm::mat4 model;
 };

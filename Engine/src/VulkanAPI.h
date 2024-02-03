@@ -158,6 +158,7 @@ private:
   vk::RenderPass renderPass;
 
   std::vector<UniformBuffer> globalUniformBuffers;
+  std::vector<UniformBuffer> globalLightUniformBuffers;
   std::vector<vk::DescriptorSet> globalDescriptorSets;
 
   std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;

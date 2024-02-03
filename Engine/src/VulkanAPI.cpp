@@ -449,8 +449,12 @@ void VulkanAPI::createDescriptorSetLayouts() {
       0, vk::DescriptorType::eUniformBuffer, 1,
       vk::ShaderStageFlagBits::eVertex);
 
-  std::array<vk::DescriptorSetLayoutBinding, 1> globalBindings = {
-      gboLayoutBinding};
+  vk::DescriptorSetLayoutBinding lboLayoutBinding(
+      1, vk::DescriptorType::eUniformBuffer, 1,
+      vk::ShaderStageFlagBits::eFragment);
+
+  std::array<vk::DescriptorSetLayoutBinding, 2> globalBindings = {
+      gboLayoutBinding, lboLayoutBinding};
 
   vk::DescriptorSetLayoutCreateInfo globalLayoutInfo({}, globalBindings);
 
@@ -664,10 +668,16 @@ void VulkanAPI::createGlobalDescriptorSets() {
     vk::DescriptorBufferInfo bufferInfo(globalUniformBuffers[i].uniformBuffer,
                                         0, sizeof(GlobalBufferObject));
 
+    vk::DescriptorBufferInfo lightBufferInfo(
+        globalLightUniformBuffers[i].uniformBuffer, 0,
+        sizeof(LightBufferObject));
+
     DescriptorBuilder::begin(&Renderer::getAPI()->descriptorLayoutCache,
                              &Renderer::getAPI()->descriptorAllocator)
         .bind_buffer(0, &bufferInfo, vk::DescriptorType::eUniformBuffer,
                      vk::ShaderStageFlagBits::eVertex)
+        .bind_buffer(1, &lightBufferInfo, vk::DescriptorType::eUniformBuffer,
+                     vk::ShaderStageFlagBits::eFragment)
         .build(globalDescriptorSets[i]);
   }
 }
@@ -1113,6 +1123,7 @@ void VulkanAPI::init(const std::vector<Pipeline> &pipelines) {
   createRenderPass();
   createPipelineCache();
   createUniformBuffers(globalUniformBuffers, sizeof(GlobalBufferObject));
+  createUniformBuffers(globalLightUniformBuffers, sizeof(LightBufferObject));
   createDescriptorSetLayouts();
   createGraphicsPipelines(pipelines);
   createDescriptorAllocator();
@@ -1141,6 +1152,16 @@ void VulkanAPI::updateUniformBuffers(uint32_t currentImage) {
   std::memcpy(data, &gbo, sizeof(gbo));
   vmaUnmapMemory(allocator,
                  globalUniformBuffers[currentImage].uniformBufferAllocation);
+
+  LightBufferObject lbo{glm::vec4(1.0, 5.0, 0.0, 1.0),
+                        glm::vec4(1.0, 1.0, 1.0, 1.0)};
+  
+  vmaMapMemory(allocator,
+               globalLightUniformBuffers[currentImage].uniformBufferAllocation,
+               &data);
+  std::memcpy(data, &lbo, sizeof(lbo));
+  vmaUnmapMemory(allocator,
+                 globalLightUniformBuffers[currentImage].uniformBufferAllocation);
 
   RenderableBufferObject ubo{};
   ubo.model = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
@@ -1254,6 +1275,10 @@ void VulkanAPI::cleanup() {
   }
 
   for (auto buffer : globalUniformBuffers)
+    vmaDestroyBuffer(allocator, buffer.uniformBuffer,
+                     buffer.uniformBufferAllocation);
+
+  for (auto buffer : globalLightUniformBuffers)
     vmaDestroyBuffer(allocator, buffer.uniformBuffer,
                      buffer.uniformBufferAllocation);
 

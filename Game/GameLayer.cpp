@@ -32,7 +32,7 @@ std::pair<int, int> last_mouse_pos{};
 void GameLayer::init() {
   scene = std::make_shared<Scene>();
 
-  Helper::importModel("bp", "assets/models/backpack/backpack.obj");
+  Helper::importModel("bp", "assets/models/sponza/NewSponza_Main_glTF_002.gltf");
 
   Entity e = scene->spawn();
   scene->addComponent<Renderable>(e, "bp", "main");
@@ -85,7 +85,7 @@ void GameLayer::onUpdate() {
   auto v = scene->registry.view<Spin, Transform>();
   for (auto e : v) {
     auto [spin, transform] = v.get<Spin, Transform>(e);
-    transform.rotation.z = spin.rotation;
+    transform.rotation.y = spin.rotation;
   }
 
   auto bobTransform = scene->registry.view<Bob, Transform>();
